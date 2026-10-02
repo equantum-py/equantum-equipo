@@ -32,3 +32,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Importante
 El repositorio debe ser privado porque contendrá la base del portal interno de eQuantum.
+
+
+<!-- deploy: production refresh 2026-10-02 -->
