@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("active,force_password_change")
+      .select("active,force_password_change,is_master")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -63,7 +63,19 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/cambiar-contrasena";
       return securityHeaders(NextResponse.redirect(url));
-    } else if (!profile.force_password_change && (pathname === "/login" || pathname === "/cambiar-contrasena")) {
+    } else if (!profile.force_password_change && profile.is_master) {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel !== "aal2" && pathname !== "/seguridad/2fa") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/seguridad/2fa";
+        return securityHeaders(NextResponse.redirect(url));
+      }
+      if (aal?.currentLevel === "aal2" && (pathname === "/login" || pathname === "/cambiar-contrasena" || pathname === "/seguridad/2fa")) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return securityHeaders(NextResponse.redirect(url));
+      }
+    } else if (!profile.force_password_change && (pathname === "/login" || pathname === "/cambiar-contrasena" || pathname === "/seguridad/2fa")) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return securityHeaders(NextResponse.redirect(url));
