@@ -29,7 +29,11 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/dashboard");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setError("No pudimos verificar el usuario."); return; }
+      const { data: profile } = await supabase.from("profiles").select("active,force_password_change").eq("id", user.id).single();
+      if (profile?.active === false) { await supabase.auth.signOut(); setError("Tu acceso está suspendido. Contactá a Gerencia."); return; }
+      router.replace(profile?.force_password_change ? "/cambiar-contrasena" : "/dashboard");
       router.refresh();
     } catch {
       setError("No pudimos iniciar sesión. Intentá nuevamente.");
