@@ -249,3 +249,28 @@ aside button:hover,aside a:hover,nav button:hover,nav a:hover{
 aside button:active,aside a:active,nav button:active,nav a:active{
   transform:none!important;
 }
+
+
+/* Sidebar definitivo: plano, limpio, sin glow neumorfico */
+aside nav button{
+  background:transparent!important;
+  border:1px solid transparent!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+  color:rgba(219,234,254,.72)!important;
+}
+aside nav button:hover{
+  background:rgba(255,255,255,.055)!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+  color:#fff!important;
+}
+aside nav button[class*="bg-white/10"]{
+  background:rgba(255,255,255,.11)!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  color:#fff!important;
+}
