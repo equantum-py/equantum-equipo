@@ -208,89 +208,30 @@ main [class*="bg-[#123f72]"]{
 }
 
 
-/* Hotfix: sidebar dark + readable after clay theme */
-aside [class*="bg-white"],
-nav [class*="bg-white"]{
-  background:transparent!important;
-}
-aside button:not([class*="bg-[#"]):not(.bg-white),
-nav button:not([class*="bg-[#"]):not(.bg-white){
-  background:transparent!important;
-}
-aside .bg-white,
-nav .bg-white{
-  background:rgba(255,255,255,.10)!important;
-  color:#fff!important;
-  border:1px solid rgba(255,255,255,.10)!important;
-  box-shadow:
-    inset 1px 1px 0 rgba(255,255,255,.08),
-    5px 6px 14px rgba(0,24,55,.18)!important;
-}
-aside button,aside a,nav button,nav a{
-  color:#cbdcf0!important;
-  box-shadow:none!important;
-}
-aside button:hover,aside a:hover,nav button:hover,nav a:hover{
-  background:rgba(255,255,255,.08)!important;
-  color:#fff!important;
-}
-aside [class*="bg-white/10"],nav [class*="bg-white/10"]{
-  background:rgba(255,255,255,.10)!important;
-  color:#fff!important;
-}
 
-
-/* Sidebar: sin efecto luminoso/levantado al pasar el cursor */
-aside button:hover,aside a:hover,nav button:hover,nav a:hover{
-  transform:none!important;
-  box-shadow:none!important;
-  filter:none!important;
-}
-aside button:active,aside a:active,nav button:active,nav a:active{
-  transform:none!important;
-}
-
-
-/* Sidebar definitivo: plano, limpio, sin glow neumorfico */
-aside nav button{
-  background:transparent!important;
-  border:1px solid transparent!important;
+/* Sidebar aislado del sistema clay: navegación limpia y sin bordes */
+aside nav > button,
+aside nav > button:hover,
+aside nav > button:focus,
+aside nav > button:focus-visible,
+aside nav > button:active {
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  border:none!important;
+  outline:none!important;
   box-shadow:none!important;
   filter:none!important;
   transform:none!important;
+}
+aside nav > button {
+  background:transparent!important;
   color:rgba(219,234,254,.72)!important;
 }
-aside nav button:hover{
+aside nav > button:hover {
   background:rgba(255,255,255,.055)!important;
-  border-color:transparent!important;
-  box-shadow:none!important;
-  filter:none!important;
-  transform:none!important;
   color:#fff!important;
 }
-aside nav button[class*="bg-white/10"]{
+aside nav > button.bg-white\/10 {
   background:rgba(255,255,255,.11)!important;
-  border-color:transparent!important;
-  box-shadow:none!important;
   color:#fff!important;
-}
-
-
-/* Sidebar nav reset final: ningún item lleva contorno, sombra o glow */
-aside nav button,
-aside nav button:hover,
-aside nav button:focus,
-aside nav button:focus-visible,
-aside nav button:active{
-  border:0!important;
-  outline:0!important;
-  box-shadow:none!important;
-  filter:none!important;
-  transform:none!important;
-}
-aside nav button:not([class*="bg-white/10"]){
-  background:transparent!important;
-}
-aside nav button[class*="bg-white/10"]{
-  background:rgba(255,255,255,.10)!important;
 }
