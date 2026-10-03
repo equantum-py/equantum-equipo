@@ -206,3 +206,35 @@ main [class*="bg-[#123f72]"]{
     inset 2px 2px 3px rgba(255,255,255,.16),
     inset -2px -2px 4px rgba(4,30,63,.18)!important;
 }
+
+
+/* Hotfix: sidebar dark + readable after clay theme */
+aside [class*="bg-white"],
+nav [class*="bg-white"]{
+  background:transparent!important;
+}
+aside button:not([class*="bg-[#"]):not(.bg-white),
+nav button:not([class*="bg-[#"]):not(.bg-white){
+  background:transparent!important;
+}
+aside .bg-white,
+nav .bg-white{
+  background:rgba(255,255,255,.10)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,.08),
+    5px 6px 14px rgba(0,24,55,.18)!important;
+}
+aside button,aside a,nav button,nav a{
+  color:#cbdcf0!important;
+  box-shadow:none!important;
+}
+aside button:hover,aside a:hover,nav button:hover,nav a:hover{
+  background:rgba(255,255,255,.08)!important;
+  color:#fff!important;
+}
+aside [class*="bg-white/10"],nav [class*="bg-white/10"]{
+  background:rgba(255,255,255,.10)!important;
+  color:#fff!important;
+}
