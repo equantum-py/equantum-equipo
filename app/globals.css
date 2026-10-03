@@ -159,3 +159,50 @@ aside button,nav button{
     box-shadow:5px 5px 14px rgba(70,94,125,.12),-5px -5px 14px rgba(255,255,255,.9)!important;
   }
 }
+
+
+/* V2: claymorphism visible en las superficies reales del dashboard */
+main{
+  background:
+    radial-gradient(circle at 18% 12%,rgba(255,255,255,.95),transparent 30%),
+    linear-gradient(145deg,#edf3f9,#e5edf6)!important;
+}
+main .bg-white,
+main [class*="bg-white"],
+main [class*="bg-slate-50"]{
+  background:linear-gradient(145deg,#f8fbff,#e7eef6)!important;
+}
+main [class*="rounded-[18px]"],
+main .rounded-2xl,
+main .rounded-xl{
+  border:1px solid rgba(255,255,255,.9)!important;
+}
+main [class*="rounded-[18px]"],
+main .rounded-2xl.bg-white,
+main .rounded-xl.bg-white,
+main .rounded-2xl[class*="bg-slate"],
+main .rounded-xl[class*="bg-slate"]{
+  box-shadow:
+    12px 12px 26px rgba(77,99,126,.15),
+    -10px -10px 24px rgba(255,255,255,.96),
+    inset 1px 1px 0 rgba(255,255,255,.95)!important;
+}
+main [class*="rounded-[18px]"]:hover,
+main button.rounded-xl:hover{
+  transform:translateY(-2px);
+  box-shadow:
+    14px 14px 28px rgba(77,99,126,.17),
+    -11px -11px 25px rgba(255,255,255,.98)!important;
+}
+main [class*="bg-[#f1f6fb]"]{
+  background:linear-gradient(145deg,#f8fbff,#dfe9f4)!important;
+  box-shadow:6px 6px 14px rgba(77,99,126,.13),-6px -6px 14px #fff!important;
+}
+main [class*="bg-[#08295c]"],
+main [class*="bg-[#123f72]"]{
+  background:linear-gradient(145deg,#195b99,#0b3565)!important;
+  box-shadow:
+    8px 9px 18px rgba(18,63,114,.24),
+    inset 2px 2px 3px rgba(255,255,255,.16),
+    inset -2px -2px 4px rgba(4,30,63,.18)!important;
+}
