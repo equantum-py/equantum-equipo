@@ -60,3 +60,102 @@ button {
   font-weight: 500 !important;
   letter-spacing: .1em;
 }
+
+
+/* eQuantum Soft Neumorphism + Claymorphism */
+:root{
+  --eq-surface:#eef3f9;
+  --eq-surface-2:#f7faff;
+  --eq-blue:#123f72;
+  --eq-clay-blue:#2f7df4;
+  --eq-shadow-dark:rgba(70,94,125,.16);
+  --eq-shadow-light:rgba(255,255,255,.96);
+}
+html,body{
+  background:
+    radial-gradient(circle at 14% 4%,rgba(88,153,255,.12),transparent 27%),
+    radial-gradient(circle at 88% 18%,rgba(134,196,255,.10),transparent 25%),
+    linear-gradient(145deg,#f4f8fc 0%,#eaf1f8 100%);
+}
+body{min-height:100vh}
+
+/* Superficies infladas, suaves y táctiles */
+.rounded-2xl,.rounded-xl,.rounded-3xl{
+  border-color:rgba(255,255,255,.76)!important;
+}
+.bg-white{
+  background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(239,245,251,.92))!important;
+}
+.shadow-sm,.shadow,.shadow-md{
+  box-shadow:
+    9px 9px 22px var(--eq-shadow-dark),
+    -9px -9px 22px var(--eq-shadow-light)!important;
+}
+.border{
+  border:1px solid rgba(255,255,255,.82)!important;
+}
+
+/* Inputs hundidos */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,select,.inputV3{
+  background:linear-gradient(145deg,#e9f0f7,#f8fbfe)!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  box-shadow:
+    inset 3px 3px 8px rgba(87,108,136,.10),
+    inset -3px -3px 8px rgba(255,255,255,.90)!important;
+  border-radius:16px!important;
+  transition:.2s ease;
+}
+input:focus,textarea:focus,select:focus{
+  box-shadow:
+    inset 2px 2px 6px rgba(87,108,136,.09),
+    inset -2px -2px 6px rgba(255,255,255,.95),
+    0 0 0 3px rgba(47,125,244,.10)!important;
+}
+
+/* Botones: clay suave, sin apariencia plástica exagerada */
+button{
+  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
+}
+button:not(:disabled):active{transform:translateY(1px) scale(.985)}
+button.bg-white{
+  box-shadow:
+    5px 5px 12px rgba(70,94,125,.13),
+    -5px -5px 12px rgba(255,255,255,.95)!important;
+}
+button[class*="bg-[#123f72]"],button[class*="bg-[#12365f]"]{
+  border:1px solid rgba(255,255,255,.18)!important;
+  box-shadow:
+    0 8px 18px rgba(18,63,114,.20),
+    inset 0 1px 1px rgba(255,255,255,.22)!important;
+}
+
+/* Panel lateral Gemini */
+.fixed section.bg-white{
+  background:linear-gradient(155deg,#f8fbff,#edf4fb)!important;
+  box-shadow:-18px 0 40px rgba(54,77,108,.16)!important;
+}
+.fixed section.bg-white .bg-\[\#f5f8fb\]{
+  background:linear-gradient(145deg,#edf3f9,#f9fbfe)!important;
+  box-shadow:
+    inset 3px 3px 9px rgba(74,98,129,.09),
+    inset -3px -3px 9px rgba(255,255,255,.92)!important;
+}
+
+/* Sidebar mantiene identidad eQuantum pero gana volumen */
+aside,nav{
+  -webkit-font-smoothing:antialiased;
+}
+aside button,nav button{
+  border-radius:14px;
+}
+
+/* Reduce dureza de divisores */
+.border-b,.border-t{border-color:rgba(112,137,166,.13)!important}
+
+/* Accesibilidad: sin sombras excesivas en pantallas pequeñas */
+@media(max-width:768px){
+  .shadow-sm,.shadow,.shadow-md{
+    box-shadow:5px 5px 14px rgba(70,94,125,.12),-5px -5px 14px rgba(255,255,255,.9)!important;
+  }
+}
