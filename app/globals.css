@@ -79,19 +79,23 @@ html,body{
 }
 body{min-height:100vh}
 
-/* Superficies infladas, suaves y táctiles */
-.rounded-2xl,.rounded-xl,.rounded-3xl{
+/* Superficies infladas, suaves y táctiles — solo contenido, nunca sidebar */
+main .rounded-2xl,
+main .rounded-xl,
+main .rounded-3xl{
   border-color:rgba(255,255,255,.76)!important;
 }
-.bg-white{
+main .bg-white{
   background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(239,245,251,.92))!important;
 }
-.shadow-sm,.shadow,.shadow-md{
+main .shadow-sm,
+main .shadow,
+main .shadow-md{
   box-shadow:
     9px 9px 22px var(--eq-shadow-dark),
     -9px -9px 22px var(--eq-shadow-light)!important;
 }
-.border{
+main .border{
   border:1px solid rgba(255,255,255,.82)!important;
 }
 
@@ -234,4 +238,23 @@ aside nav > button:hover {
 aside nav > button.bg-white\/10 {
   background:rgba(255,255,255,.11)!important;
   color:#fff!important;
+}
+
+/* Hard reset sidebar: fuera del claymorphism */
+aside nav button,
+aside nav button:hover,
+aside nav button:focus,
+aside nav button:focus-visible,
+aside nav button:active{
+  background:transparent!important;
+  border-width:0!important;
+  border-style:none!important;
+  border-color:transparent!important;
+  outline:none!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+}
+aside nav button[class~="bg-white/10"]{
+  background:rgba(255,255,255,.10)!important;
 }
