@@ -62,199 +62,57 @@ button {
 }
 
 
-/* eQuantum Soft Neumorphism + Claymorphism */
+
+/* eQuantum Clay UI — aplicado únicamente al área de trabajo */
 :root{
-  --eq-surface:#eef3f9;
-  --eq-surface-2:#f7faff;
-  --eq-blue:#123f72;
-  --eq-clay-blue:#2f7df4;
-  --eq-shadow-dark:rgba(70,94,125,.16);
-  --eq-shadow-light:rgba(255,255,255,.96);
+  --eq-surface:#edf3f9;
+  --eq-shadow-dark:rgba(70,94,125,.15);
+  --eq-shadow-light:rgba(255,255,255,.95);
 }
-html,body{
-  background:
-    radial-gradient(circle at 14% 4%,rgba(88,153,255,.12),transparent 27%),
-    radial-gradient(circle at 88% 18%,rgba(134,196,255,.10),transparent 25%),
-    linear-gradient(145deg,#f4f8fc 0%,#eaf1f8 100%);
-}
-body{min-height:100vh}
-
-/* Superficies infladas, suaves y táctiles — solo contenido, nunca sidebar */
-main .rounded-2xl,
-main .rounded-xl,
-main .rounded-3xl{
-  border-color:rgba(255,255,255,.76)!important;
-}
-main .bg-white{
-  background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(239,245,251,.92))!important;
-}
-main .shadow-sm,
-main .shadow,
-main .shadow-md{
-  box-shadow:
-    9px 9px 22px var(--eq-shadow-dark),
-    -9px -9px 22px var(--eq-shadow-light)!important;
-}
-main .border{
-  border:1px solid rgba(255,255,255,.82)!important;
-}
-
-/* Inputs hundidos */
-input:not([type="checkbox"]):not([type="radio"]),
-textarea,select,.inputV3{
-  background:linear-gradient(145deg,#e9f0f7,#f8fbfe)!important;
-  border:1px solid rgba(255,255,255,.72)!important;
-  box-shadow:
-    inset 3px 3px 8px rgba(87,108,136,.10),
-    inset -3px -3px 8px rgba(255,255,255,.90)!important;
-  border-radius:16px!important;
-  transition:.2s ease;
-}
-input:focus,textarea:focus,select:focus{
-  box-shadow:
-    inset 2px 2px 6px rgba(87,108,136,.09),
-    inset -2px -2px 6px rgba(255,255,255,.95),
-    0 0 0 3px rgba(47,125,244,.10)!important;
-}
-
-/* Botones: clay suave, sin apariencia plástica exagerada */
-button{
-  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
-}
-button:not(:disabled):active{transform:translateY(1px) scale(.985)}
-button.bg-white{
-  box-shadow:
-    5px 5px 12px rgba(70,94,125,.13),
-    -5px -5px 12px rgba(255,255,255,.95)!important;
-}
-button[class*="bg-[#123f72]"],button[class*="bg-[#12365f]"]{
-  border:1px solid rgba(255,255,255,.18)!important;
-  box-shadow:
-    0 8px 18px rgba(18,63,114,.20),
-    inset 0 1px 1px rgba(255,255,255,.22)!important;
-}
-
-/* Panel lateral Gemini */
-.fixed section.bg-white{
-  background:linear-gradient(155deg,#f8fbff,#edf4fb)!important;
-  box-shadow:-18px 0 40px rgba(54,77,108,.16)!important;
-}
-.fixed section.bg-white .bg-\[\#f5f8fb\]{
-  background:linear-gradient(145deg,#edf3f9,#f9fbfe)!important;
-  box-shadow:
-    inset 3px 3px 9px rgba(74,98,129,.09),
-    inset -3px -3px 9px rgba(255,255,255,.92)!important;
-}
-
-/* Sidebar mantiene identidad eQuantum pero gana volumen */
-aside,nav{
-  -webkit-font-smoothing:antialiased;
-}
-aside button,nav button{
-  border-radius:14px;
-}
-
-/* Reduce dureza de divisores */
-.border-b,.border-t{border-color:rgba(112,137,166,.13)!important}
-
-/* Accesibilidad: sin sombras excesivas en pantallas pequeñas */
-@media(max-width:768px){
-  .shadow-sm,.shadow,.shadow-md{
-    box-shadow:5px 5px 14px rgba(70,94,125,.12),-5px -5px 14px rgba(255,255,255,.9)!important;
-  }
-}
-
-
-/* V2: claymorphism visible en las superficies reales del dashboard */
 main{
-  background:
-    radial-gradient(circle at 18% 12%,rgba(255,255,255,.95),transparent 30%),
-    linear-gradient(145deg,#edf3f9,#e5edf6)!important;
+  background:linear-gradient(145deg,#f4f8fc,#e8f0f8);
 }
-main .bg-white,
-main [class*="bg-white"],
-main [class*="bg-slate-50"]{
-  background:linear-gradient(145deg,#f8fbff,#e7eef6)!important;
-}
-main [class*="rounded-[18px]"],
-main .rounded-2xl,
-main .rounded-xl{
-  border:1px solid rgba(255,255,255,.9)!important;
-}
-main [class*="rounded-[18px]"],
 main .rounded-2xl.bg-white,
 main .rounded-xl.bg-white,
 main .rounded-2xl[class*="bg-slate"],
 main .rounded-xl[class*="bg-slate"]{
-  box-shadow:
-    12px 12px 26px rgba(77,99,126,.15),
-    -10px -10px 24px rgba(255,255,255,.96),
-    inset 1px 1px 0 rgba(255,255,255,.95)!important;
+  background:linear-gradient(145deg,#f8fbff,#e7eef6)!important;
+  border:1px solid rgba(255,255,255,.82)!important;
+  box-shadow:10px 10px 24px var(--eq-shadow-dark),-9px -9px 22px var(--eq-shadow-light)!important;
 }
-main [class*="rounded-[18px]"]:hover,
-main button.rounded-xl:hover{
-  transform:translateY(-2px);
-  box-shadow:
-    14px 14px 28px rgba(77,99,126,.17),
-    -11px -11px 25px rgba(255,255,255,.98)!important;
+main input:not([type="checkbox"]):not([type="radio"]),
+main textarea,
+main select{
+  background:linear-gradient(145deg,#e9f0f7,#f8fbfe)!important;
+  box-shadow:inset 3px 3px 8px rgba(87,108,136,.10),inset -3px -3px 8px rgba(255,255,255,.9)!important;
 }
-main [class*="bg-[#f1f6fb]"]{
-  background:linear-gradient(145deg,#f8fbff,#dfe9f4)!important;
-  box-shadow:6px 6px 14px rgba(77,99,126,.13),-6px -6px 14px #fff!important;
-}
-main [class*="bg-[#08295c]"],
-main [class*="bg-[#123f72]"]{
-  background:linear-gradient(145deg,#195b99,#0b3565)!important;
-  box-shadow:
-    8px 9px 18px rgba(18,63,114,.24),
-    inset 2px 2px 3px rgba(255,255,255,.16),
-    inset -2px -2px 4px rgba(4,30,63,.18)!important;
+main button[class*="bg-[#123f72]"],
+main button[class*="bg-[#12365f]"]{
+  box-shadow:0 8px 18px rgba(18,63,114,.20),inset 0 1px 1px rgba(255,255,255,.20)!important;
 }
 
-
-
-/* Sidebar aislado del sistema clay: navegación limpia y sin bordes */
-aside nav > button,
-aside nav > button:hover,
-aside nav > button:focus,
-aside nav > button:focus-visible,
-aside nav > button:active {
-  appearance:none!important;
-  -webkit-appearance:none!important;
-  border:none!important;
-  outline:none!important;
+/* Sidebar: conservar exactamente la navegación oscura original */
+aside nav button{
+  background:transparent!important;
+  border:0!important;
+  outline:0!important;
   box-shadow:none!important;
   filter:none!important;
   transform:none!important;
 }
-aside nav > button {
-  background:transparent!important;
-  color:rgba(219,234,254,.72)!important;
+aside nav button:hover{
+  background:rgba(255,255,255,.05)!important;
 }
-aside nav > button:hover {
-  background:rgba(255,255,255,.055)!important;
-  color:#fff!important;
-}
-aside nav > button.bg-white\/10 {
-  background:rgba(255,255,255,.11)!important;
-  color:#fff!important;
-}
-
-/* Hard reset sidebar: fuera del claymorphism */
-aside nav button,
-aside nav button:hover,
-aside nav button:focus,
-aside nav button:focus-visible,
-aside nav button:active{
-  background:transparent!important;
-  border-width:0!important;
-  border-style:none!important;
-  border-color:transparent!important;
-  outline:none!important;
-  box-shadow:none!important;
-  filter:none!important;
-  transform:none!important;
-}
-aside nav button[class~="bg-white/10"]{
+aside nav button.bg-white\/10{
   background:rgba(255,255,255,.10)!important;
+}
+
+/* El perfil y logout tampoco reciben superficies blancas del clay */
+aside > div[class*="bg-white/10"]{
+  background:rgba(255,255,255,.10)!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+aside > button{
+  box-shadow:none!important;
 }
