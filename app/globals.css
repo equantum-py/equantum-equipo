@@ -63,35 +63,42 @@ button {
 
 
 
-/* eQuantum Clay UI — aplicado únicamente al área de trabajo */
+/* eQuantum Soft UI — limpio, táctil y sin halos blancos */
 :root{
   --eq-surface:#edf3f9;
-  --eq-shadow-dark:rgba(70,94,125,.15);
-  --eq-shadow-light:rgba(255,255,255,.95);
 }
 main{
-  background:linear-gradient(145deg,#f4f8fc,#e8f0f8);
+  background:#eef3f8;
 }
+
+/* Superficies suaves: volumen por contraste, no por resplandor */
 main .rounded-2xl.bg-white,
 main .rounded-xl.bg-white,
 main .rounded-2xl[class*="bg-slate"],
 main .rounded-xl[class*="bg-slate"]{
-  background:linear-gradient(145deg,#f8fbff,#e7eef6)!important;
-  border:1px solid rgba(255,255,255,.82)!important;
-  box-shadow:10px 10px 24px var(--eq-shadow-dark),-9px -9px 22px var(--eq-shadow-light)!important;
+  background:#f5f8fc!important;
+  border:1px solid #e2eaf2!important;
+  box-shadow:0 5px 14px rgba(36,50,71,.06)!important;
 }
 main input:not([type="checkbox"]):not([type="radio"]),
 main textarea,
 main select{
-  background:linear-gradient(145deg,#e9f0f7,#f8fbfe)!important;
-  box-shadow:inset 3px 3px 8px rgba(87,108,136,.10),inset -3px -3px 8px rgba(255,255,255,.9)!important;
+  background:#f7f9fc!important;
+  border-color:#dbe4ed!important;
+  box-shadow:inset 0 1px 3px rgba(36,50,71,.05)!important;
 }
 main button[class*="bg-[#123f72]"],
 main button[class*="bg-[#12365f]"]{
-  box-shadow:0 8px 18px rgba(18,63,114,.20),inset 0 1px 1px rgba(255,255,255,.20)!important;
+  box-shadow:0 5px 12px rgba(18,63,114,.14)!important;
 }
 
-/* Sidebar: conservar exactamente la navegación oscura original */
+/* Modales: sin glow/halo blanco exterior */
+[role="dialog"],
+.fixed[class*="inset-0"] > div[class*="rounded"]{
+  box-shadow:0 18px 48px rgba(20,38,60,.18)!important;
+}
+
+/* Sidebar oscuro y plano */
 aside nav button{
   background:transparent!important;
   border:0!important;
@@ -106,8 +113,6 @@ aside nav button:hover{
 aside nav button.bg-white\/10{
   background:rgba(255,255,255,.10)!important;
 }
-
-/* El perfil y logout tampoco reciben superficies blancas del clay */
 aside > div[class*="bg-white/10"]{
   background:rgba(255,255,255,.10)!important;
   border-color:transparent!important;
