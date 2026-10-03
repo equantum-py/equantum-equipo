@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const context = JSON.stringify({ tasks: results[0].data || [], clients: results[1].data || [], followups: results[2].data || [] });
     const instruction = "Sos el asistente interno de Gestion eQuantum. Responde en espanol claro, directo y profesional. Usa solamente los datos suministrados. No inventes informacion. Si faltan datos, decilo. Detecta atrasos, riesgos, falta de seguimiento y prioridades. No ejecutes cambios; solo analiza y recomienda. DATOS: " + context + " PREGUNTA: " + question;
 
-    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
     const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
