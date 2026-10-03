@@ -238,3 +238,14 @@ aside [class*="bg-white/10"],nav [class*="bg-white/10"]{
   background:rgba(255,255,255,.10)!important;
   color:#fff!important;
 }
+
+
+/* Sidebar: sin efecto luminoso/levantado al pasar el cursor */
+aside button:hover,aside a:hover,nav button:hover,nav a:hover{
+  transform:none!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
+aside button:active,aside a:active,nav button:active,nav a:active{
+  transform:none!important;
+}
