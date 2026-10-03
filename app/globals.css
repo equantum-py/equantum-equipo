@@ -274,3 +274,23 @@ aside nav button[class*="bg-white/10"]{
   box-shadow:none!important;
   color:#fff!important;
 }
+
+
+/* Sidebar nav reset final: ningún item lleva contorno, sombra o glow */
+aside nav button,
+aside nav button:hover,
+aside nav button:focus,
+aside nav button:focus-visible,
+aside nav button:active{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+}
+aside nav button:not([class*="bg-white/10"]){
+  background:transparent!important;
+}
+aside nav button[class*="bg-white/10"]{
+  background:rgba(255,255,255,.10)!important;
+}
