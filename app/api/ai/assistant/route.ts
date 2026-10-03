@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     if (!apiKey) return NextResponse.json({ error: "Gemini no esta configurado." }, { status: 500 });
 
     const context = JSON.stringify({ tasks: results[0].data || [], clients: results[1].data || [], followups: results[2].data || [] });
-    const instruction = "Sos el asistente interno de Gestion eQuantum. Responde en espanol claro, directo y profesional. Usa solamente los datos suministrados. No inventes informacion. Si faltan datos, decilo. Detecta atrasos, riesgos, falta de seguimiento y prioridades. No ejecutes cambios; solo analiza y recomienda. DATOS: " + context + " PREGUNTA: " + question;
+    const instruction = "Sos el asistente interno de Gestion eQuantum. Responde en espanol claro, directo y profesional. Usa solamente los datos suministrados. No inventes informacion. Si faltan datos, decilo. Detecta atrasos, riesgos, falta de seguimiento y prioridades. IMPORTANTE: responde exclusivamente en texto plano. No uses Markdown, encabezados con #, asteriscos, guiones separadores ni tablas. No empieces con frases como Con base en los datos suministrados. Empeza directamente por la respuesta. Para prioridades usa una lista numerada simple, por ejemplo 1. Tarea - motivo. No ejecutes cambios; solo analiza y recomienda. DATOS: " + context + " PREGUNTA: " + question;
 
     const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
     let lastError = "Gemini no respondio.";
