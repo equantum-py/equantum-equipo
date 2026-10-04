@@ -25,23 +25,29 @@ export async function POST(request: Request) {
     const instruction = "Sos el asistente interno de Gestion eQuantum. Responde en espanol claro, directo y profesional. Usa solamente los datos suministrados. No inventes informacion. Si faltan datos, decilo. Detecta atrasos, riesgos, falta de seguimiento y prioridades. IMPORTANTE: responde exclusivamente en texto plano. No uses Markdown, encabezados con #, asteriscos, guiones separadores ni tablas. No empieces con frases como Con base en los datos suministrados. Empeza directamente por la respuesta. Para prioridades usa una lista numerada simple, por ejemplo 1. Tarea - motivo. No ejecutes cambios; solo analiza y recomienda. DATOS: " + context + " PREGUNTA: " + question;
 
     const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
-    let lastError = "Gemini no respondio.";
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt) await new Promise(resolve => setTimeout(resolve, attempt * 900));
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({ contents: [{ parts: [{ text: instruction }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 900 } })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        const answer = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("").trim();
-        return NextResponse.json({ answer: answer || "Sin respuesta." });
-      }
-      lastError = data?.error?.message || lastError;
-      if (![429, 503].includes(response.status)) break;
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: instruction }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 450 }
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      const answer = data?.candidates?.[0]?.content?.parts
+        ?.map((part: { text?: string }) => part.text || "")
+        .join("")
+        .trim();
+      return NextResponse.json({ answer: answer || "Sin respuesta." });
     }
-    return NextResponse.json({ error: "Gemini esta con alta demanda en este momento. Intenta nuevamente en unos segundos.", detail: lastError }, { status: 503 });
+
+    return NextResponse.json(
+      { error: "eQ no pudo responder ahora. Proba nuevamente." },
+      { status: response.status === 429 || response.status === 503 ? 503 : 500 }
+    );
   } catch {
     return NextResponse.json({ error: "No se pudo consultar a Gemini." }, { status: 500 });
   }
