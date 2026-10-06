@@ -66,6 +66,20 @@ with check (
 
 commit;
 
+-- SEGURIDAD ADICIONAL A VALIDAR EN STAGING/ENTORNO EFIMERO
+-- detect_operational_improvements es SECURITY DEFINER y actualmente tiene EXECUTE para anon/public.
+-- La version V2 debe revocar anon/public y conservar authenticated solo tras validar permisos internos.
+--
+-- TICKETS / PORTAL / STORAGE
+-- El inventario detecto politicas duplicadas en tickets y ticket_messages.
+-- No se retiran aqui sin entorno de prueba porque son rutas operativas activas.
+-- El siguiente archivo de migracion V2 debe consolidarlas y aislar:
+--   * lectura/escritura interna mediante is_active_user();
+--   * Portal mediante portal_client_id();
+--   * is_internal=false para mensajes visibles al cliente;
+--   * ticket_events solo internos;
+--   * bucket ticket-attachments privado y autorizado por ticket/empresa.
+--
 -- PRUEBAS OBLIGATORIAS ANTES DE PRODUCCION
 -- A. Usuario interno activo:
 --    - puede leer clients y projects segun alcance interno actual.
