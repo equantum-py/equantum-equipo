@@ -1,0 +1,77 @@
+name: Phase 0 - Encrypted Supabase Backup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    # Safety: this workflow is intentionally manual and read-only against production.
+    if: github.ref == 'refs/heads/relanzamiento-2026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Validate required secrets
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_DB_URL" || { echo "Missing SUPABASE_DB_URL"; exit 1; }
+          test -n "$BACKUP_ENCRYPTION_PASSWORD" || { echo "Missing BACKUP_ENCRYPTION_PASSWORD"; exit 1; }
+          case "$SUPABASE_DB_URL" in
+            postgresql://*|postgres://*) ;;
+            *) echo "SUPABASE_DB_URL is not a PostgreSQL URI"; exit 1 ;;
+          esac
+
+      - name: Create production dump with PostgreSQL 17
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p backup
+          docker run --rm \
+            -e SUPABASE_DB_URL \
+            -v "$PWD/backup:/backup" \
+            postgres:17 \
+            sh -c 'pg_dump "$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges --file=/backup/equantum-production.dump'
+          test -s backup/equantum-production.dump
+
+      - name: Verify dump is readable
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "$PWD/backup:/backup:ro" \
+            postgres:17 \
+            pg_restore --list /backup/equantum-production.dump > backup/manifest.txt
+          test -s backup/manifest.txt
+          echo "Dump verified. Manifest entries: $(wc -l < backup/manifest.txt)"
+
+      - name: Encrypt backup before artifact upload
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+        run: |
+          set -euo pipefail
+          openssl enc -aes-256-cbc -salt -pbkdf2 \
+            -in backup/equantum-production.dump \
+            -out backup/equantum-production.dump.enc \
+            -pass env:BACKUP_ENCRYPTION_PASSWORD
+          test -s backup/equantum-production.dump.enc
+          rm -f backup/equantum-production.dump
+          # Do not upload manifest: it may reveal database object names.
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase0-supabase-backup-${{ github.run_id }}
+          path: backup/equantum-production.dump.enc
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
