@@ -4,6 +4,27 @@ DO $$
 DECLARE
   n integer;
 BEGIN
+
+  -- QA: Storage requiere RLS y politica autorizada.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class
+    WHERE oid = to_regclass('storage.objects')
+      AND relrowsecurity
+  ) THEN
+    RAISE EXCEPTION 'FAIL: falta Storage o su RLS';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'ticket attachments read authorized'
+      AND cmd = 'SELECT'
+      AND 'authenticated' = ANY(roles)
+  ) THEN
+    RAISE EXCEPTION 'FAIL: falta politica autorizada de Storage';
+  END IF;
+
   -- Las 12 tablas V2 deben tener RLS activo.
   SELECT count(*)
   INTO n

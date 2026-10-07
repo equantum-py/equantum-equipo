@@ -2,6 +2,48 @@
 
 BEGIN;
 
+DO $$
+BEGIN
+
+  -- QA: Storage requiere RLS y politica autorizada.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class
+    WHERE oid = to_regclass('storage.objects')
+      AND relrowsecurity
+  ) THEN
+    RAISE EXCEPTION 'FAIL: falta Storage o su RLS';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'ticket attachments read authorized'
+      AND cmd = 'SELECT'
+      AND 'authenticated' = ANY(roles)
+  ) THEN
+    RAISE EXCEPTION 'FAIL: falta politica autorizada de Storage';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_roles WHERE rolname = 'authenticated'
+  ) OR EXISTS (
+    SELECT 1 FROM pg_roles
+    WHERE rolname = 'authenticated'
+      AND (rolsuper OR rolbypassrls)
+  ) OR EXISTS (
+    SELECT 1 FROM pg_class
+    WHERE oid = to_regclass('storage.objects')
+      AND relowner = (
+        SELECT oid FROM pg_roles WHERE rolname = 'authenticated'
+      )
+  ) THEN
+    RAISE EXCEPTION 'FAIL: authenticated podria evitar RLS';
+  END IF;
+
+END $$;
+
+
 -- Adaptación exclusiva del PostgreSQL local para reproducir
 -- la capa mínima de permisos administrados por Supabase.
 -- Todos estos cambios desaparecen con ROLLBACK.

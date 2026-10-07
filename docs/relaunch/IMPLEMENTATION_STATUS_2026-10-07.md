@@ -448,3 +448,43 @@ PASS dentro del alcance PostgreSQL/RLS local probado.
 
 La prueba no constituye por sí sola validación E2E del servicio
 Supabase Storage remoto ni certificación global de seguridad.
+
+## Checkpoint 04B — Integracion Storage en QA SQL
+
+Fecha: 2026-10-07.
+
+### Evidencia
+
+- Base local probada: equantum_restore_clean.
+- Contenedor: equantum-staging.
+- Politica ticket attachments read authorized presente en ambas
+  bases locales: equantum_staging y equantum_restore_clean.
+- Storage A/B: A propio=1, otro=0; B propio=1, otro=0.
+- Prueba A/B finalizada con ROLLBACK.
+- Objetos QA antes/despues: 0/0.
+- Permisos temporales auth/storage/SELECT: no persistieron.
+- Runner: scripts/relaunch/qa-sql.sh.
+- Regresion SQL: PASS=21 FAIL=0 TOTAL=21; codigo de resultado 0.
+- bash -n y git diff --check: sin errores.
+
+### Cambios
+
+security_rls_v3.sql exige RLS habilitado y presencia de la politica
+autorizada de lectura para authenticated, ademas de rechazar la
+politica amplia anterior.
+
+storage_portal_isolation_v3.sql comprueba esos requisitos y rechaza
+un rol authenticated con superusuario, BYPASSRLS o propiedad de objects.
+
+El runner incluye todos los tests SQL y solo admite la base local
+equantum_restore_clean dentro del contenedor equantum-staging.
+
+### Limites
+
+PASS dentro del alcance PostgreSQL/RLS local probado.
+No valida el servicio remoto Supabase Storage ni sus flujos E2E.
+21/21 tests SQL no equivale a 361/361 criterios formales.
+
+La causa historica de la consulta que devolvio cero politicas no
+quedo demostrada. No se reinstalaron ni modificaron politicas:
+la politica autorizada ya estaba presente al verificar ambas bases.
