@@ -198,9 +198,9 @@ Main: NO MODIFICAR
 | Control | Estado | Evidencia |
 |---|---|---|
 | UI Triage existente | PASS | Dashboard actual |
-| Regla de prioridad backend | PARTIAL | Funcion y trigger implementados; calculo probado, falta test integrado del trigger sobre Tasks |
+| Regla de prioridad backend | PASS | Trigger INSERT/UPDATE probado en PostgreSQL local: tasks_triage_integration_v2 |
 | Score reproducible backend | PASS | calculate_task_triage: siete casos Golden locales; dashboard consume score persistido |
-| Razones de priorización backend | PARTIAL | Implementadas en calculate_task_triage; falta comprobar razones esperadas y su integracion |
+| Razones de priorización backend | PASS | Razones exactas y limpieza probadas mediante trigger local; E2E visual pendiente |
 | Golden Triage | PASS | golden_triage_v2: siete casos de calculo local, sin certificar E2E |
 
 ---
@@ -510,3 +510,25 @@ Pendientes identificados:
 
 No se certifican 361/361 criterios ni 40/40 casos.
 Main y produccion permanecen fuera de este checkpoint.
+
+## Checkpoint 06 — Triage integrado
+
+Fecha: 2026-10-07.
+Base: equantum_restore_clean; contenedor: equantum-staging.
+
+Prueba: supabase/tests/tasks_triage_integration_v2.sql.
+
+Resultados:
+- INSERT calcula score, prioridad y razones, reemplazando valores enviados.
+- UPDATE individual de cada uno de los cinco factores recalcula Triage.
+- Score, prioridad y razones coinciden con los resultados esperados.
+- Restablecer factores elimina razones anteriores.
+- Editar descripcion conserva Triage.
+- ROLLBACK deja cero Tasks QA residuales.
+- Test integrado: codigo 0.
+- Regresion SQL: PASS=22 FAIL=0 TOTAL=22; codigo 0.
+
+Alcance: comportamiento del backend PostgreSQL local como postgres.
+No certifica permisos de usuarios, E2E visual ni resistencia a
+modificaciones directas de columnas derivadas mediante UPDATE.
+No equivale a 361/361 criterios ni 40/40 casos de integracion.
