@@ -137,14 +137,14 @@ Main: NO MODIFICAR
 
 | Control | Estado | Evidencia |
 |---|---|---|
-| Sale separada de Invoice | PENDING | Documento 19 vigente |
-| Invoice separada de Payment | PENDING | Documento 19 vigente |
-| Caja / movimientos | PENDING | Documento 19 vigente |
-| Multimoneda gobernada | PENDING | No sumar monedas sin conversión |
+| Sale separada de Invoice | PASS | PostgreSQL local: golden_financial_v2 y financial_functions_e2e_v2 |
+| Invoice separada de Payment | PASS | PostgreSQL local: golden_financial_v2 y financial_functions_e2e_v2 |
+| Caja / movimientos | PARTIAL | Movimientos y conciliacion sin duplicar cobro probados localmente; falta validar alcance integral |
+| Multimoneda gobernada | PARTIAL | Separacion de monedas y rechazo de Payment incompatible probados; conversion y gobierno pendientes de evidencia |
 | Tratamiento fiscal | PENDING | Falta implementación |
 | Comisión excluye IVA | PENDING | Falta implementación |
 | Historial de política de comisión | PENDING | Falta implementación |
-| Golden financiero exacto | PENDING | Falta ejecución |
+| Golden financiero exacto | PASS | golden_financial_v2 ejecutado dentro del QA 21/21; alcance SQL local, no certifica todo Documento 19 |
 
 ---
 
@@ -186,9 +186,9 @@ Main: NO MODIFICAR
 | Portal aislado por empresa | PASS | pruebas positivas/negativas |
 | Portal sin notas internas | PASS | pruebas de aislamiento |
 | financial_info DB | PASS | negative tests DB |
-| financial_info API | PENDING | Falta negative test |
-| financial_info IA | PENDING | Falta negative test |
-| Storage privado | PARTIAL | Endurecido; falta cobertura final |
+| financial_info API | PARTIAL | Asistente HTTP local validado en checkpoint 03; falta cobertura del resto de APIs aplicables |
+| financial_info IA | PASS | Checkpoint 03: bloqueo previo a contexto/proveedor, dentro del alcance local probado |
+| Storage privado | PARTIAL | Checkpoint 04B: A/B PostgreSQL local PASS; servicio remoto y flujos E2E pendientes |
 | Master protegido | PASS | Cuenta master preservada |
 
 ---
@@ -198,10 +198,10 @@ Main: NO MODIFICAR
 | Control | Estado | Evidencia |
 |---|---|---|
 | UI Triage existente | PASS | Dashboard actual |
-| Regla de prioridad backend | PENDING | Actualmente parte del cálculo está en React |
-| Score reproducible backend | PENDING | Falta implementación |
-| Razones de priorización backend | PENDING | Falta implementación |
-| Golden Triage | PENDING | Falta test |
+| Regla de prioridad backend | PARTIAL | Funcion y trigger implementados; calculo probado, falta test integrado del trigger sobre Tasks |
+| Score reproducible backend | PASS | calculate_task_triage: siete casos Golden locales; dashboard consume score persistido |
+| Razones de priorización backend | PARTIAL | Implementadas en calculate_task_triage; falta comprobar razones esperadas y su integracion |
+| Golden Triage | PASS | golden_triage_v2: siete casos de calculo local, sin certificar E2E |
 
 ---
 
@@ -243,7 +243,7 @@ Main: NO MODIFICAR
 | 361 ACC matriz completa | PENDING |
 | 40 IT/INT | PENDING |
 | Playwright E2E | PENDING |
-| Vercel Preview commit 5d6661f | PENDING |
+| Vercel Preview del candidato de release | PENDING | Validar el commit final seleccionado para release |
 | Ensayo rollback final | PENDING |
 | Merge main | BLOCKED |
 | Producción | BLOCKED |
@@ -488,3 +488,25 @@ No valida el servicio remoto Supabase Storage ni sus flujos E2E.
 La causa historica de la consulta que devolvio cero politicas no
 quedo demostrada. No se reinstalaron ni modificaron politicas:
 la politica autorizada ya estaba presente al verificar ambas bases.
+
+## Checkpoint 05 — Reconciliacion de estado y evidencia
+
+Fecha: 2026-10-07.
+
+Se actualizaron las filas generales con evidencia de los checkpoints
+03/04B y del QA SQL 21/21 ejecutado en equantum_restore_clean.
+
+No se rehizo implementacion ni se repitieron pruebas ya aprobadas.
+PASS en estas filas conserva el alcance local indicado.
+
+Pendientes identificados:
+- Triage: prueba integrada del trigger y razones esperadas.
+- Finanzas: reconciliacion completa contra Documento 19,
+  tratamiento fiscal, comisiones y gobierno multimoneda.
+- Auth/Storage remoto, recorridos E2E y Preview del candidato.
+- Ensayo final de rollback.
+- Matriz de criterios y casos de integracion: no localizada en
+  el repo ni en la busqueda limitada realizada en Cloud Shell.
+
+No se certifican 361/361 criterios ni 40/40 casos.
+Main y produccion permanecen fuera de este checkpoint.
