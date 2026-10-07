@@ -35,7 +35,7 @@
 | ACC-SEC-003 global | PARTIAL |
 | 361 criterios de aceptación | VALIDACIÓN FORMAL PENDIENTE |
 | 40 casos de integración | PENDIENTE |
-| ACC-MIG-001 | PARTIAL |
+| ACC-MIG-001 | PASS |
 | Release producción | BLOQUEADO |
 
 ## Evidencia QA actual
@@ -97,7 +97,7 @@ Main: NO MODIFICAR
 | Rama aislada relanzamiento-2026 | PASS | Rama activa separada de main |
 | Main protegido durante relanzamiento | PASS | Sin merge a main |
 | Backup producción | PASS | pg_dump PostgreSQL 17 + copia cifrada |
-| Restore de ensayo | PARTIAL | Datos de negocio restaurados; 3 errores supabase_vault |
+| Restore de ensayo | PASS | Restore PostgreSQL reproducible; Vault excluido explícitamente por no estar disponible en PostgreSQL local |
 | Staging sin costo | PASS | PostgreSQL 17 en Docker |
 | Variables sensibles fuera de Git | PASS | .env* incluido en .gitignore |
 | APIs IA pagas | PASS | No utilizadas |
@@ -265,3 +265,56 @@ Producción permanece BLOQUEADA hasta:
 9. Rollback ensayado.
 10. Autorización explícita de release.
 
+
+## CHECKPOINT 02 — ACC-MIG-001 CERRADO
+
+**Resultado:** PASS para backup/restore PostgreSQL y cadena de migraciones V2.
+
+### Evidencia
+
+- Backup utilizado: `staging-baseline.dump`.
+- PostgreSQL de ensayo: 17.
+- Restore limpio ejecutado en base temporal independiente.
+- `supabase_vault` aislado explícitamente:
+  - schema `vault`;
+  - extensión `supabase_vault`;
+  - comentario de extensión;
+  - datos `vault.secrets`.
+- Primer restore filtrado: exit code `0`, stderr `0`.
+- Segundo restore desde cero: exit code `0`, stderr `0`.
+- Migraciones V2: `18/18 PASS`, `0 FAIL`.
+- Runner oficial: `scripts/relaunch/migrate-v2-order.sh`.
+- QA sobre base reconstruida: `20/20 PASS`, `0 FAIL`.
+- Baseline final:
+  - clients: 3
+  - profiles: 3
+  - tasks: 3
+  - tickets: 2
+  - user_permissions: 3
+  - opportunities: 0
+  - sales: 0
+  - invoices: 0
+  - payments: 0
+  - bank_movements: 0
+- RLS: `30/30` tablas públicas.
+- Policies: `53`.
+- `is_internal_user()` presente.
+- `has_financial_info()` presente.
+- `authenticated` sin SELECT directo sobre `user_permissions`.
+- `authenticated` sin SELECT directo sobre `profiles`.
+- Base `equantum_staging` original permaneció intacta.
+
+### Límite de la evidencia
+
+Este PASS demuestra recuperación PostgreSQL, datos de negocio, migraciones,
+RLS y pruebas SQL del relanzamiento.
+
+**No certifica un restore completo de servicios administrados de Supabase
+Auth/Storage/Vault.** `supabase_vault` no está disponible en el contenedor
+PostgreSQL local y fue excluido de manera explícita, no ignorado silenciosamente.
+
+### Próximo checkpoint
+
+Checkpoint 03: cierre de bloqueantes de seguridad y aceptación restantes.
+
+---
