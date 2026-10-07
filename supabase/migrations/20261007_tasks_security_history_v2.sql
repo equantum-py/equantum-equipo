@@ -68,6 +68,82 @@ FROM PUBLIC, anon, authenticated;
 
 
 -- ------------------------------------------------------------
+
+-- Evalúa un permiso operativo del usuario autenticado sin exponer
+-- directamente public.user_permissions al cliente.
+CREATE OR REPLACE FUNCTION public.has_task_permission(
+  p_permission text
+)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_allowed boolean := false;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN false;
+  END IF;
+
+  SELECT CASE p_permission
+    WHEN 'view_all_tasks' THEN up.view_all_tasks
+    WHEN 'view_area_tasks' THEN up.view_area_tasks
+    WHEN 'reassign_tasks' THEN up.reassign_tasks
+    WHEN 'delete_tasks' THEN up.delete_tasks
+    ELSE false
+  END
+  INTO v_allowed
+  FROM public.user_permissions up
+  WHERE up.user_id = auth.uid();
+
+  RETURN coalesce(v_allowed, false);
+END;
+$$;
+
+REVOKE ALL
+ON FUNCTION public.has_task_permission(text)
+FROM PUBLIC, anon;
+
+GRANT EXECUTE
+ON FUNCTION public.has_task_permission(text)
+TO authenticated;
+
+
+
+-- Comprueba si el assignee pertenece al área del usuario autenticado
+-- sin exponer public.profiles directamente.
+CREATE OR REPLACE FUNCTION public.task_assignee_in_my_area(
+  p_assignee_id uuid
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.profiles me
+    JOIN public.profiles assignee
+      ON assignee.id = p_assignee_id
+    WHERE me.id = auth.uid()
+      AND me.active = true
+      AND me.area IS NOT NULL
+      AND assignee.area = me.area
+  );
+$$;
+
+REVOKE ALL
+ON FUNCTION public.task_assignee_in_my_area(uuid)
+FROM PUBLIC, anon;
+
+GRANT EXECUTE
+ON FUNCTION public.task_assignee_in_my_area(uuid)
+TO authenticated;
+
+
 -- 2. VIEW_AREA_TASKS
 -- ------------------------------------------------------------
 
@@ -87,31 +163,50 @@ USING (
 
     OR created_by = auth.uid()
 
-    OR EXISTS (
-      SELECT 1
-      FROM public.user_permissions p
-      WHERE p.user_id = auth.uid()
-        AND p.view_all_tasks = true
-    )
+    OR public.has_task_permission('view_all_tasks')
 
-    OR EXISTS (
-      SELECT 1
-      FROM public.user_permissions p
-      JOIN public.profiles me
-        ON me.id = auth.uid()
-      JOIN public.profiles assignee
-        ON assignee.id = tasks.assignee_id
-      WHERE p.user_id = auth.uid()
-        AND p.view_area_tasks = true
-        AND me.active = true
-        AND me.area IS NOT NULL
-        AND assignee.area = me.area
+    OR (
+      public.has_task_permission('view_area_tasks')
+      AND public.task_assignee_in_my_area(tasks.assignee_id)
     )
   )
 );
 
 
 -- ------------------------------------------------------------
+
+-- ------------------------------------------------------------
+-- 2B. UPDATE TASKS DENTRO DEL ALCANCE VISIBLE
+-- La policy habilita la fila para UPDATE.
+-- La reasignación de assignee_id se controla además por
+-- trg_guard_task_reassignment.
+-- ------------------------------------------------------------
+
+DROP POLICY IF EXISTS "tasks update"
+ON public.tasks;
+
+CREATE POLICY "tasks update"
+ON public.tasks
+FOR UPDATE
+TO authenticated
+USING (
+  public.is_active_user()
+  AND (
+    public.is_admin()
+    OR assignee_id = auth.uid()
+    OR created_by = auth.uid()
+    OR public.has_task_permission('view_all_tasks')
+    OR (
+      public.has_task_permission('view_area_tasks')
+      AND public.task_assignee_in_my_area(tasks.assignee_id)
+    )
+  )
+)
+WITH CHECK (
+  public.is_active_user()
+);
+
+
 -- 3. PROTEGER REASIGNACION
 -- ------------------------------------------------------------
 
@@ -128,12 +223,7 @@ BEGIN
     IF NOT (
       public.is_admin()
 
-      OR EXISTS (
-        SELECT 1
-        FROM public.user_permissions p
-        WHERE p.user_id = auth.uid()
-          AND p.reassign_tasks = true
-      )
+      OR public.has_task_permission('reassign_tasks')
     ) THEN
       RAISE EXCEPTION
         'No tiene permiso para reasignar tareas';
@@ -168,6 +258,9 @@ FROM PUBLIC, anon, authenticated;
 DROP POLICY IF EXISTS "tasks admin delete"
 ON public.tasks;
 
+DROP POLICY IF EXISTS "tasks controlled delete"
+ON public.tasks;
+
 CREATE POLICY "tasks controlled delete"
 ON public.tasks
 FOR DELETE
@@ -175,13 +268,19 @@ TO authenticated
 USING (
   public.is_admin()
 
-  OR EXISTS (
-    SELECT 1
-    FROM public.user_permissions p
-    WHERE p.user_id = auth.uid()
-      AND p.delete_tasks = true
-  )
+  OR public.has_task_permission('delete_tasks')
 );
 
+
+
+-- Privilegios de tabla necesarios para que RLS pueda evaluar
+-- el acceso de usuarios authenticated.
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON public.tasks
+TO authenticated;
+
+GRANT SELECT
+ON public.task_status_history
+TO authenticated;
 
 COMMIT;

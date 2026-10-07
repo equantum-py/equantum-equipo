@@ -8,6 +8,19 @@ BEGIN;
 -- Financieras: internos + financial_info.
 -- ============================================================
 
+DROP POLICY IF EXISTS "commercial entities internal read" ON public.commercial_entities;
+DROP POLICY IF EXISTS "catalog items internal read" ON public.catalog_items;
+DROP POLICY IF EXISTS "prospects internal read" ON public.prospects;
+DROP POLICY IF EXISTS "active services internal read" ON public.active_services;
+DROP POLICY IF EXISTS "active service events internal read" ON public.active_service_events;
+DROP POLICY IF EXISTS "radar items internal read" ON public.radar_items;
+DROP POLICY IF EXISTS "task status history internal read" ON public.task_status_history;
+DROP POLICY IF EXISTS "opportunities financial read" ON public.opportunities;
+DROP POLICY IF EXISTS "proposals financial read" ON public.proposals;
+DROP POLICY IF EXISTS "proposal items financial read" ON public.proposal_items;
+DROP POLICY IF EXISTS "sales financial read" ON public.sales;
+DROP POLICY IF EXISTS "sale items financial read" ON public.sale_items;
+
 -- ---------- OPERATIVAS ----------
 
 CREATE POLICY "commercial entities internal read"
