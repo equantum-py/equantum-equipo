@@ -318,3 +318,100 @@ PostgreSQL local y fue excluido de manera explícita, no ignorado silenciosament
 Checkpoint 03: cierre de bloqueantes de seguridad y aceptación restantes.
 
 ---
+
+---
+
+## CHECKPOINT 03 — Seguridad financiera del asistente
+
+**Fecha:** 2026-10-07  
+**Criterio trabajado:** ACC-SEC-003  
+**Estado técnico del control probado:** PASS  
+**Producción:** NO DESPLEGADA / NO AUTORIZADA
+
+### Objetivo
+
+Validar que una consulta financiera sensible sea rechazada antes de:
+
+1. cargar contexto operativo;
+2. consultar información de tareas/clientes/seguimientos;
+3. invocar un proveedor externo de IA.
+
+### Implementación
+
+La lógica de `POST /api/ai/assistant` fue separada en un handler reutilizable:
+
+- `app/api/ai/assistant/route.ts`
+- `lib/ai/assistant-handler.ts`
+
+La ruta pública continúa utilizando el cliente Supabase real de servidor.
+
+No se agregó bypass de autenticación ni endpoint de pruebas al código final.
+
+### Orden de seguridad validado
+
+1. autenticación;
+2. `has_financial_info`;
+3. clasificación de consulta financiera;
+4. respuesta 403 si no está autorizada;
+5. recién después carga de contexto;
+6. recién después, si corresponde, proveedor externo de IA.
+
+### Evidencia HTTP local aislada
+
+Prueba ejecutada mediante Next.js local contra el mismo
+`handleAssistantPost` utilizado por `/api/ai/assistant`.
+
+Casos:
+
+- PASS — sin autenticación → HTTP 401, queries=0, fetch=0.
+- PASS — autenticado sin `financial_info` → HTTP 403, queries=0, fetch=0.
+- PASS — error en RPC de permiso → HTTP 403, queries=0, fetch=0.
+- PASS — intento de prompt injection financiero → HTTP 403, queries=0, fetch=0.
+- PASS — consulta operativa autenticada → HTTP 200, queries=3, fetch=0.
+
+**Resultado:** 5/5 casos PASS.
+
+### Fail-closed
+
+Si la verificación `has_financial_info` falla y la consulta solicita
+información financiera restringida, la solicitud se rechaza con 403.
+
+No se cargan `tasks`, `clients` ni `followups` antes del rechazo.
+
+No se realiza llamada al proveedor externo de IA antes del rechazo.
+
+### Validación de compilación
+
+- TypeScript `npx tsc --noEmit`: PASS.
+- Next.js production build: PASS.
+- Compilación: PASS.
+- Lint/type validation: PASS.
+- Static pages: 11/11.
+- `/api/ai/assistant`: ruta dinámica válida.
+
+### Limpieza
+
+El endpoint temporal utilizado para la prueba HTTP fue eliminado antes
+del cierre.
+
+Código final no contiene `/api/test/acc-sec-003`.
+
+### Alcance y límite de evidencia
+
+Esta evidencia valida la integración HTTP local del handler,
+autenticación simulada, autorización financiera simulada, fail-closed,
+orden de controles y ausencia de acceso a contexto/IA antes del rechazo.
+
+**No constituye una prueba E2E contra Supabase Auth remoto.**
+
+No se utilizó producción como ambiente de prueba.
+
+No se realizaron llamadas pagas de IA.
+
+### Resultado Checkpoint 03
+
+**ACC-SEC-003 — PASS dentro del alcance técnico probado.**
+
+La validación integral de release continúa sujeta a los criterios
+formales restantes, staging/evidencias aplicables y autorización de
+despliegue.
