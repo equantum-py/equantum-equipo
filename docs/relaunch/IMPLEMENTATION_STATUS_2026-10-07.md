@@ -415,3 +415,36 @@ No se realizaron llamadas pagas de IA.
 La validación integral de release continúa sujeta a los criterios
 formales restantes, staging/evidencias aplicables y autorización de
 despliegue.
+
+## Checkpoint 04 — Storage Portal RLS A/B
+
+Fecha de ejecución: 2026-10-07
+
+### Alcance probado
+
+Se validó localmente el aislamiento horizontal del bucket
+`ticket-attachments` mediante RLS sobre `storage.objects`.
+
+La prueba reproduce temporalmente la capa mínima de permisos
+administrados por Supabase dentro de una transacción y finaliza
+con `ROLLBACK`.
+
+### Resultado
+
+- Usuario Portal A puede leer su propio objeto: PASS.
+- Usuario Portal A no puede leer objeto de B: PASS.
+- Usuario Portal B puede leer su propio objeto: PASS.
+- Usuario Portal B no puede leer objeto de A: PASS.
+- Objetos residuales después de la prueba: 0.
+- Grants temporales sobre Storage después del rollback: no persistieron.
+
+Prueba reproducible:
+
+`supabase/tests/storage_portal_isolation_v3.sql`
+
+### Límite de la evidencia
+
+PASS dentro del alcance PostgreSQL/RLS local probado.
+
+La prueba no constituye por sí sola validación E2E del servicio
+Supabase Storage remoto ni certificación global de seguridad.
