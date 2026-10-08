@@ -2,8 +2,11 @@
 
 import {useEffect,useMemo,useRef,useState} from "react";
 import {createClient} from "@/lib/supabase/client";
+import dynamic from "next/dynamic";
 import {calculateCommercialFinanceSummary, type FinanceSale} from "@/lib/finance/summary";
 import {Banknote,FileText,Landmark,RefreshCw} from "lucide-react";
+
+const FinancialPolicies=dynamic(()=>import("./FinancialPolicies"));
 
 type Invoice={
   id:string;
@@ -60,7 +63,7 @@ const invoiceLabel:Record<string,string>={
   void:"Anulada"
 };
 
-export default function FinanceView(){
+export default function FinanceView({canManagePolicies=false}:{canManagePolicies?:boolean}){
   const sb=useMemo(()=>createClient(),[]);
   const request=useRef(0);
   const [sales,setSales]=useState<FinanceSale[]>([]);
@@ -69,6 +72,7 @@ export default function FinanceView(){
   const [bank,setBank]=useState<BankMovement[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
+  const [showPolicies,setShowPolicies]=useState(false);
 
   async function load(){
     const current=++request.current;
@@ -144,6 +148,14 @@ export default function FinanceView(){
         Actualizar
       </button>
     </div>
+
+    {canManagePolicies&&<div className="mb-5">
+      <button type="button" aria-expanded={showPolicies} onClick={()=>setShowPolicies(x=>!x)}
+        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-[#044474]">
+        {showPolicies?"Ocultar políticas y aprobaciones":"Políticas y aprobaciones"}
+      </button>
+      {showPolicies&&<FinancialPolicies/>}
+    </div>}
 
     {error&&
       <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
@@ -270,3 +282,4 @@ function Section({title,children}:{title:string;children:React.ReactNode}){
 function Empty({text}:{text:string}){
   return <p className="py-6 text-center text-sm text-slate-400">{text}</p>;
 }
+
