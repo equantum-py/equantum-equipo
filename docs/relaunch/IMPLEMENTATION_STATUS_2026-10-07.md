@@ -142,8 +142,8 @@ Main: NO MODIFICAR
 | Caja / movimientos | PARTIAL | Movimientos y conciliacion sin duplicar cobro probados localmente; falta validar alcance integral |
 | Multimoneda gobernada | PARTIAL | Separacion de monedas y rechazo de Payment incompatible probados; conversion y gobierno pendientes de evidencia |
 | Tratamiento fiscal | PENDING | Falta implementación |
-| Comisión excluye IVA | PENDING | Falta implementación |
-| Historial de política de comisión | PENDING | Falta implementación |
+| Comisión excluye IVA | PASS | Backend PostgreSQL local: base 10M, IVA 1M, tasa 5%, comisión 500000; commission_policy_snapshot_v3 |
+| Historial de política de comisión | PASS | Backend PostgreSQL local: snapshot de versión/tasa, cambio 5% a 7% conserva venta anterior; UI/E2E pendientes |
 | Golden financiero exacto | PASS | golden_financial_v2 ejecutado dentro del QA 21/21; alcance SQL local, no certifica todo Documento 19 |
 
 ---
@@ -591,3 +591,26 @@ Evidencia local: /home/equantumg/equantum-fiscal-validacion.txt.
 Límite: PostgreSQL local como postgres; no certifica permisos administrativos ni clasificación fiscal legal. FIN005 sigue pendiente de políticas y clasificación gobernada. FIN006 conserva la base probada pero falta calcular/persistir la comisión. FIN007 sigue pendiente de porcentaje y versión histórica de política. No se aplica tasa global del 5% ni se configura fiscalidad productiva.
 
 Integración solamente a relanzamiento-2026; main y producción no se modifican.
+
+## Checkpoint 08 — Comisión versionada y ensayo desde restore
+
+Ejecución: 2026-10-07 America/Asuncion (2026-10-08 UTC).
+Migración generada con Supabase CLI 2.81.3: 20261008021415_commission_policies_v3.sql.
+Candidato ensayado: 05bfe2365c3e091c68a678b5758e15e7841a08b9.
+
+Evidencia inicial: /home/equantumg/equantum-commission-validacion.txt; equantum_restore_clean, QA=25/25.
+Evidencia de restore nuevo: /home/equantumg/equantum-commission-rehearsal.txt; equantum_commission_rehearsal, mismo contenedor equantum-staging.
+
+- Restore del baseline con Vault explícitamente excluido, no-owner/no-privileges y transacción única: aprobado.
+- Baseline 11 tablas reconciliado.
+- Runner ordenado: ATTEMPTED=20 PASS=20 FAIL=0 TOTAL=20.
+- SQL QA: 25/25 aprobado desde el restore nuevo.
+- Master autenticado crea versiones explícitas; actor restringido no lee ni crea políticas.
+- Base sin IVA 10000000, IVA 1000000: 5%=500000; versión 7%=700000.
+- Retry y cambio posterior de Proposal conservan el snapshot histórico.
+- Edición de política/snapshot/inputs históricos bloqueada.
+- Sin política elegida, tasa/importe NULL, sin porcentaje global ni backfill ficticio.
+- Fixtures y grants de prueba revertidos mediante ROLLBACK.
+- Sintaxis Python del instalador y bash -n/diff --check inicial: sin errores.
+
+Alcance: backend y RLS PostgreSQL local. No se aplicaron políticas de negocio productivas ni se modificó main/producción. UI para crear/elegir políticas, E2E, revisión final de seguridad/advisors y configuración operativa/fiscal permanecen pendientes. No certifica todos los criterios ni rollback final de release.
