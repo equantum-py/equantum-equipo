@@ -1,12 +1,13 @@
 "use client";
 
-import {useEffect,useMemo,useState} from "react";
+import {useEffect,useMemo,useRef,useState} from "react";
 import {createClient} from "@/lib/supabase/client";
-import {calculateFinanceSummary} from "@/lib/finance/summary";
+import {calculateCommercialFinanceSummary, type FinanceSale} from "@/lib/finance/summary";
 import {Banknote,FileText,Landmark,RefreshCw} from "lucide-react";
 
 type Invoice={
   id:string;
+  sale_id:string|null;
   invoice_number:string|null;
   currency:string;
   total_amount:number;
@@ -61,6 +62,8 @@ const invoiceLabel:Record<string,string>={
 
 export default function FinanceView(){
   const sb=useMemo(()=>createClient(),[]);
+  const request=useRef(0);
+  const [sales,setSales]=useState<FinanceSale[]>([]);
   const [invoices,setInvoices]=useState<Invoice[]>([]);
   const [payments,setPayments]=useState<Payment[]>([]);
   const [bank,setBank]=useState<BankMovement[]>([]);
@@ -68,35 +71,52 @@ export default function FinanceView(){
   const [error,setError]=useState("");
 
   async function load(){
+    const current=++request.current;
     setLoading(true);
     setError("");
 
-    const [a,b,c]=await Promise.all([
-      sb.from("invoices").select("*").order("created_at",{ascending:false}),
-      sb.from("payments").select("*").order("paid_at",{ascending:false}),
-      sb.from("bank_movements").select("*").order("occurred_at",{ascending:false})
-    ]);
+    async function readRows(table:string,columns:string){
+      const rows=[];
+      for(let offset=0;;offset+=500){
+        const result=await sb.from(table).select(columns)
+          .order("id",{ascending:true}).range(offset,offset+499);
+        if(result.error) throw result.error;
+        const page=result.data||[];
+        rows.push(...page);
+        if(page.length<500) return rows;
+      }
+    }
 
-    const err=a.error||b.error||c.error;
-
-    if(err){
-      setError(err.message);
+    try{
+      const [a,b,c,d]=await Promise.all([
+        readRows("invoices","*"),
+        readRows("payments","*"),
+        readRows("bank_movements","*"),
+        readRows("sales","id,currency,gross_amount")
+      ]);
+      if(current!==request.current) return;
+      setInvoices((a as Invoice[]).sort((x,y)=>(y.issued_at||"").localeCompare(x.issued_at||"")));
+      setPayments((b as Payment[]).sort((x,y)=>y.paid_at.localeCompare(x.paid_at)));
+      setBank((c as BankMovement[]).sort((x,y)=>y.occurred_at.localeCompare(x.occurred_at)));
+      setSales(d as FinanceSale[]);
+    }catch{
+      if(current!==request.current) return;
+      setError("No se pudo cargar la información financiera.");
+      setSales([]);
       setInvoices([]);
       setPayments([]);
       setBank([]);
-    }else{
-      setInvoices((a.data||[]) as Invoice[]);
-      setPayments((b.data||[]) as Payment[]);
-      setBank((c.data||[]) as BankMovement[]);
+    }finally{
+      if(current===request.current) setLoading(false);
     }
-
-    setLoading(false);
   }
 
-  useEffect(()=>{load()},[]);
+  useEffect(()=>{load();return ()=>{request.current++}},[]);
 
-  const {billed:pygInvoices,collected:pygCollected,pending:pygPending}=
-    calculateFinanceSummary(invoices,payments,"PYG");
+  const currencies=Array.from(new Set([
+    "PYG",...sales.map(x=>x.currency),...invoices.map(x=>x.currency),
+    ...payments.map(x=>x.currency)
+  ])).sort((a,b)=>a===b?0:a==="PYG"?-1:b==="PYG"?1:a.localeCompare(b));
 
   return <>
     <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -128,23 +148,24 @@ export default function FinanceView(){
       </div>
     }
 
-    <div className="grid gap-3 md:grid-cols-3">
-      <Metric
-        icon={<FileText size={18}/>}
-        label="Facturado · PYG"
-        value={loading||error?"—":money(pygInvoices,"PYG")}
-      />
-      <Metric
-        icon={<Banknote size={18}/>}
-        label="Cobrado · PYG"
-        value={loading||error?"—":money(pygCollected,"PYG")}
-      />
-      <Metric
-        icon={<Landmark size={18}/>}
-        label="Pendiente de cobro · PYG"
-        value={loading||error?"—":money(pygPending,"PYG")}
-      />
-    </div>
+    {currencies.map(currency=>{
+      const totals=calculateCommercialFinanceSummary(sales,invoices,payments,currency);
+      return <section key={currency} className="mb-5" aria-label={`Resumen financiero ${currency}`}>
+        <h2 className="mb-3 font-semibold text-[#044474]">{currency}</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <Metric icon={<FileText size={18}/>} label="Vendido"
+            value={loading||error?"—":money(totals.sold,currency)}/>
+          <Metric icon={<FileText size={18}/>} label="Facturado"
+            value={loading||error?"—":money(totals.billed,currency)}/>
+          <Metric icon={<Banknote size={18}/>} label="Cobrado"
+            value={loading||error?"—":money(totals.collected,currency)}/>
+          <Metric icon={<Landmark size={18}/>} label="Pendiente de facturar"
+            value={loading||error?"—":money(totals.pendingBilling,currency)}/>
+          <Metric icon={<Landmark size={18}/>} label="Pendiente de cobro"
+            value={loading||error?"—":money(totals.pending,currency)}/>
+        </div>
+      </section>;
+    })}
 
     <div className="mt-5 grid gap-5 xl:grid-cols-2">
       <Section title="Facturas">

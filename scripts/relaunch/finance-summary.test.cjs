@@ -27,3 +27,35 @@ test('draft and void invoices are excluded; currencies stay separate',()=>{
 test('empty dataset yields valid zero totals',()=>{
   assert.deepEqual(sum([],[],'PYG'),{billed:0,collected:0,pending:0});
 });
+
+const commercial=mod.exports.calculateCommercialFinanceSummary;
+const sale=(id,amount,currency='PYG')=>({id,gross_amount:amount,currency});
+const linked=(id,sale_id,amount,status='issued',currency='PYG')=>({...inv(id,amount,status,currency),sale_id});
+test('DOC12 FIN001 separates sold billed and collected',()=>{
+  assert.deepEqual(commercial([sale('s',20000000)],[linked('i','s',10000000)],
+    [pay('i',5000000)],'PYG'),
+    {sold:20000000,billed:10000000,collected:5000000,pendingBilling:10000000,pending:5000000});
+});
+test('DOC12 FIN008 Golden PYG and FIN003 currency separation',()=>{
+  const sales=[sale('p',14000000),sale('u',500,'USD')];
+  const invoices=[linked('pi','p',10000000),linked('ui','u',300,'issued','USD')];
+  const payments=[pay('pi',7000000),pay('ui',100,'confirmed','USD')];
+  assert.deepEqual(commercial(sales,invoices,payments,'PYG'),
+    {sold:14000000,billed:10000000,collected:7000000,pendingBilling:4000000,pending:3000000});
+  assert.deepEqual(commercial(sales,invoices,payments,'USD'),
+    {sold:500,billed:300,collected:100,pendingBilling:200,pending:200});
+});
+test('billing excess on one sale cannot hide another unbilled sale',()=>{
+  assert.deepEqual(commercial([sale('a',100),sale('b',100)],
+    [linked('i','a',150)],[],'PYG'),
+    {sold:200,billed:150,collected:0,pendingBilling:100,pending:150});
+});
+test('draft void and other currency invoices do not reduce pending billing',()=>{
+  assert.equal(commercial([sale('a',100)],
+    [linked('d','a',100,'draft'),linked('v','a',100,'void'),
+     linked('u','a',100,'issued','USD')],[],'PYG').pendingBilling,100);
+});
+test('commercial empty dataset has five zero totals',()=>{
+  assert.deepEqual(commercial([],[],[],'PYG'),
+    {sold:0,billed:0,collected:0,pendingBilling:0,pending:0});
+});
