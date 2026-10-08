@@ -574,3 +574,20 @@ La vista presenta vendido, facturado, cobrado, pendiente de facturar y pendiente
 Alcance: cálculo de presentación y regresión SQL local. No demuestra todavía el recorrido E2E DB→API→UI del Golden ni cierra los ACC completos. Tratamiento fiscal, comisiones/versionado, default y cambio de moneda autorizado, servicio Auth/Storage remoto y gates restantes conservan sus pendientes.
 
 Integración limitada a relanzamiento-2026. Main y producción no se modifican. Sin servicios pagos.
+
+## Checkpoint 07 — Contrato fiscal del cierre y base de comisión
+
+Ejecución: 2026-10-07 America/Asuncion (2026-10-08 UTC).
+Candidato: 4dac30007e59d2885ea7208ff618ed3aaef4b839.
+Evidencia local: /home/equantumg/equantum-fiscal-validacion.txt.
+
+- git diff --check: PASS.
+- Regresión SQL en equantum_restore_clean / equantum-staging: PASS=24 FAIL=0 TOTAL=24.
+- financial_fiscal_snapshot_v3.sql: PASS. Prueba el cierre real para PYG gravada, USD gravada y USD sin impuesto explícito; la moneda no decide el impuesto.
+- Base de comisión sin IVA: 10000000 para venta con impuesto 1000000, dentro del fixture probado.
+- Cambio posterior de Proposal/Items y retry WON no alteran el snapshot fiscal de Sale/Items.
+- La prueba termina con ROLLBACK y verifica ausencia de fixtures residuales.
+
+Límite: PostgreSQL local como postgres; no certifica permisos administrativos ni clasificación fiscal legal. FIN005 sigue pendiente de políticas y clasificación gobernada. FIN006 conserva la base probada pero falta calcular/persistir la comisión. FIN007 sigue pendiente de porcentaje y versión histórica de política. No se aplica tasa global del 5% ni se configura fiscalidad productiva.
+
+Integración solamente a relanzamiento-2026; main y producción no se modifican.

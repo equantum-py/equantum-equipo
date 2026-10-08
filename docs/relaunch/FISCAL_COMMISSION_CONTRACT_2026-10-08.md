@@ -8,4 +8,8 @@ Las tasas y etiquetas son fixtures de ingeniería, no políticas legales. El tes
 
 Gap confirmado al revisar las 19 migraciones versionadas: existe commission_base_amount pero no una política/version/porcentaje histórico de comisión; tax_treatment es texto explícito sin registro de políticas fiscales y clasificación gobernada.
 
-Estado: test preparado; ejecución local pendiente. FIN004 tiene cobertura directa preparada del cierre con moneda independiente del impuesto. FIN005 continúa pendiente de política/clasificación gobernada; FIN006 tiene base sin IVA pero no cálculo persistido de comisión; FIN007 continúa pendiente de versión y porcentaje histórico. No se marca PASS ni se infiere una comisión global del 5%.
+Estado: ejecución local aprobada, PASS=24 FAIL=0 TOTAL=24. Candidato 4dac300. Evidencia: /home/equantumg/equantum-fiscal-validacion.txt. FIN004 tiene cobertura directa preparada del cierre con moneda independiente del impuesto. FIN005 continúa pendiente de política/clasificación gobernada; FIN006 tiene base sin IVA pero no cálculo persistido de comisión; FIN007 continúa pendiente de versión y porcentaje histórico. No se marca PASS ni se infiere una comisión global del 5%.
+
+## Evidencia de integración
+
+Prueba fiscal y regresión de 24 archivos SQL aprobadas en equantum_restore_clean, contenedor equantum-staging. git diff --check aprobado. Se integra el test y su evidencia; no se agregan políticas ni se cierran los pendientes de comisión/configuración fiscal.
