@@ -75,11 +75,14 @@ export default function FinanceView(){
     setLoading(true);
     setError("");
 
-    async function readRows(table:string,columns:string){
-      const rows=[];
+    async function readRows<Row>(query:{
+      range:(from:number,to:number)=>PromiseLike<{
+        data:Row[]|null;error:unknown;
+      }>;
+    }):Promise<Row[]>{
+      const rows:Row[]=[];
       for(let offset=0;;offset+=500){
-        const result=await sb.from(table).select(columns)
-          .order("id",{ascending:true}).range(offset,offset+499);
+        const result=await query.range(offset,offset+499);
         if(result.error) throw result.error;
         const page=result.data||[];
         rows.push(...page);
@@ -89,16 +92,16 @@ export default function FinanceView(){
 
     try{
       const [a,b,c,d]=await Promise.all([
-        readRows("invoices","*"),
-        readRows("payments","*"),
-        readRows("bank_movements","*"),
-        readRows("sales","id,currency,gross_amount")
+        readRows<Invoice>(sb.from("invoices").select("*").order("id",{ascending:true})),
+        readRows<Payment>(sb.from("payments").select("*").order("id",{ascending:true})),
+        readRows<BankMovement>(sb.from("bank_movements").select("*").order("id",{ascending:true})),
+        readRows<FinanceSale>(sb.from("sales").select("id,currency,gross_amount").order("id",{ascending:true}))
       ]);
       if(current!==request.current) return;
-      setInvoices((a as Invoice[]).sort((x,y)=>(y.issued_at||"").localeCompare(x.issued_at||"")));
-      setPayments((b as Payment[]).sort((x,y)=>y.paid_at.localeCompare(x.paid_at)));
-      setBank((c as BankMovement[]).sort((x,y)=>y.occurred_at.localeCompare(x.occurred_at)));
-      setSales(d as FinanceSale[]);
+      setInvoices(a.sort((x,y)=>(y.issued_at||"").localeCompare(x.issued_at||"")));
+      setPayments(b.sort((x,y)=>y.paid_at.localeCompare(x.paid_at)));
+      setBank(c.sort((x,y)=>y.occurred_at.localeCompare(x.occurred_at)));
+      setSales(d);
     }catch{
       if(current!==request.current) return;
       setError("No se pudo cargar la información financiera.");
