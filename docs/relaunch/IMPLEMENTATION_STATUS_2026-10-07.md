@@ -657,3 +657,27 @@ validados todavía. La asignación de comisión a propuestas, la configuración
 fiscal operativa aprobada y los flujos comerciales completos siguen pendientes.
 No se cierra automáticamente ningún criterio ACC/IT/INT con esta evidencia.
 Main y producción no se modificaron.
+
+## Circuito comercial-financiero — validacion local agrupada
+
+Fecha UTC: 2026-10-08. Candidato validado: 620999c.
+Migracion CLI: 20261008031852_commercial_flow_v3.sql.
+
+Pantallas para propuesta con fiscalidad/comision, cierre a venta, factura y
+cobro; resumen recargado despues de operar. Escrituras para Master activo
+con financial_info; lector financiero conserva consulta sin escritura.
+
+Restore baseline reconciliado; runner 22/22; regresion SQL 28/28 en
+equantum_flow_rehearsal; circuito PYG/USD con el mismo rol authenticated Master;
+reintentos sin duplicados; Golden PYG 14M/10M/7M/4M/3M; comision cerrada
+protegida; fixtures revertidos. Tres pruebas de circuito/comision tambien
+pasaron en equantum_restore_clean.
+
+Node 9/9; TypeScript y build PASS (11/11 paginas estaticas); git diff --check
+y bash -n sin errores.
+Log: /home/equantumg/equantum-commercial-flow-validacion.txt.
+
+Auth remoto, Data API con sesion real, recorrido visual, advisors y revision de
+APIs legadas siguen pendientes, junto con configuracion fiscal operativa,
+versiones posteriores, Quick Sale sin oportunidad y conversion multimoneda.
+No se cierran automaticamente ACC/IT/INT. Main y produccion sin cambios.

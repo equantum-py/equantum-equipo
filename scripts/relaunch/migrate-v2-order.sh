@@ -25,6 +25,7 @@ MIGRATIONS=(
   "20261008013538_release_guards_v3.sql"
   "20261008021415_commission_policies_v3.sql"
   "20261008024203_fiscal_policy_governance_v3.sql"
+  "20261008031852_commercial_flow_v3.sql"
 )
 
 PASS=0

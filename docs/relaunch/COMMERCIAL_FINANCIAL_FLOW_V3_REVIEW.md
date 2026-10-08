@@ -1,65 +1,61 @@
-# Circuito comercial-financiero agrupado — candidato
+# Circuito comercial-financiero — evidencia local
 
-Base a3d0c0e. No aplicado ni validado en PostgreSQL al preparar el candidato.
+Fecha UTC: 2026-10-08. Candidato validado: 620999c.
+Migracion CLI: 20261008031852_commercial_flow_v3.sql.
 
-La seccion Finanzas incorpora una pantalla de operaciones para Master activo
-con financial_info: propuesta nueva sobre una entidad comercial existente,
-aprobacion fiscal explicita, seleccion de comision, cierre a venta, factura parcial
-y cobro confirmado. El resumen existente se recarga despues de cada operacion.
-La politica fiscal seleccionada al crear se aplica a todas las partidas; se puede
-aprobar una decision distinta por partida desde el panel de politicas antes del cierre.
+## Implementacion
 
-La migracion agrega permisos INSERT a las tablas del circuito con politicas RLS
-Master y permisos UPDATE limitados a columnas usadas por los cierres, bloqueos
-y estados derivados. financial_info por si solo no concede escritura. Las RPC
-nuevas son SECURITY INVOKER y anon no tiene EXECUTE. No se otorga DELETE.
-No se usan service_role ni claves secretas en el navegador.
+Finanzas incorpora propuesta nueva para una entidad existente, aprobacion
+fiscal explicita y comision, cierre a venta, factura parcial y cobro.
+El resumen financiero se recarga despues de operar. La politica fiscal elegida
+al crear aplica a todas las partidas; una decision distinta se puede aprobar
+por partida desde el panel de politicas antes del cierre.
 
-La creacion de propuesta usa un UUID de solicitud y compara el payload para
-rechazar reuso con otros datos; el cierre reusa la venta existente. La factura
-requiere numero, fecha e importes y conserva la misma operacion al reintentar.
-No admite superar el neto/impuesto restante de la venta. El cobro usa el contrato
-de referencia unica ya instalado. La seleccion de comision queda protegida tras
-el cierre tanto por RPC como por UPDATE directo.
+Las nuevas RPC son SECURITY INVOKER. RLS limita escrituras a Master activo
+con financial_info. financial_info por si solo permite consulta. UPDATE se
+limita a columnas necesarias para cierres, bloqueos y estados derivados.
+No se otorga DELETE ni se usan claves secretas/service_role en el navegador.
 
-El rol Master conserva facultad de escribir directamente las tablas autorizadas
-por RLS; las RPC invoker no constituyen un canal exclusivo de escritura. Los
-controles de las RPC nuevas no modifican automaticamente todos los contratos
-legados (por ejemplo create_invoice_v2). Esto requiere revision final de la API.
+La solicitud de propuesta usa UUID y compara datos al reintentar. El cierre
+mantiene una venta por oportunidad; factura exige numero, fecha y limites
+de neto/impuesto restante. El cobro usa referencia unica. Reasignar comision
+despues del cierre se rechaza incluso por UPDATE directo.
+Pagos sin fecha ya no interrumpen la carga del resumen.
 
-Pruebas preparadas: comision antes/despues del cierre; circuito completo con el
-mismo rol authenticated Master en PYG/USD; PYG 14M vendido, 10M facturado,
-7M cobrado, 4M pendiente de facturar y 3M de cobro; reintentos; rechazo de
-sobrefacturacion; usuario restringido; lector financiero sin escritura; ROLLBACK.
-La simulacion de lector interno desactiva su vinculo Portal solo dentro del test
-y se revierte. No se conceden escrituras temporales para hacer pasar el circuito.
+## Evidencia aprobada
 
-Preparacion: TypeScript estricto de los componentes nuevos y sintaxis Python
-revisados. El instalador local debe demostrar restore baseline, 22 migraciones,
-28 pruebas SQL, nueve pruebas financieras, TypeScript y build completo antes de
-integrar. CLI genera el nombre real de la migracion; la plantilla no se aplica
-al preparar la rama. El runner conserva su modo ejecutable.
+- Restore baseline: 11 conteos reconciliados, Vault excluido explicitamente.
+- Runner oficial en equantum_flow_rehearsal: 22/22 migraciones, FAIL=0.
+- Cinco cuerpos de funciones instaladas coinciden con la plantilla ensayada.
+- Regresion completa del mismo restore: 28/28 pruebas SQL.
+- Master authenticated sin bypass RLS ejecuta el circuito PYG/USD completo.
+- Golden PYG: 14M vendido, 10M facturado, 7M cobrado, 4M por facturar y 3M por cobrar.
+- Reintentos sin duplicar propuesta, venta, factura o cobro; sobrefacturacion rechazada.
+- Usuario restringido sin operaciones; lector financiero consulta sin facturar.
+- Comision historica y seleccion cerrada protegidas.
+- Fixtures y cambios temporales revertidos mediante ROLLBACK.
+- Node: 9/9 PASS; TypeScript, bash -n y git diff --check PASS.
+- Build Next.js 15.5.27: PASS, 11/11 paginas estaticas.
+- Tres pruebas de circuito/comision tambien pasaron en equantum_restore_clean.
+- Log: /home/equantumg/equantum-commercial-flow-validacion.txt.
 
-Pendientes: validacion PostgreSQL y compilacion completas del candidato,
-recorrido real navegador/Data API, advisors, politica fiscal operativa aprobada,
-versiones posteriores de propuestas, Quick Sale sin oportunidad, conversion
-multimoneda gobernada y cierre de todos los criterios ACC/IT/INT.
-No representa cierre completo de Finanzas/Documento 19 ni autorizacion de release.
-Main y produccion no se modifican.
+El test inicial de asignacion combinaba escritura y lectura en una expresion.
+Se separaron en sentencias consecutivas manteniendo ambas aserciones.
+La correccion paso sin cambiar migracion, funciones ni permisos, conservando
+el restore y la evidencia previa 22/22.
 
-## Reanudacion del ensayo local
+## Limites
 
-Migracion generada por CLI: 20261008031852_commercial_flow_v3.sql.
-Restore baseline y runner: 22/22 PASS. El circuito PYG/USD con Master,
-reintentos y lector financiero paso; la regresion se detuvo en la comprobacion
-inicial de commission_assignment_v3, que combinaba escritura y lectura en una
-misma expresion. Se separan en sentencias consecutivas, conservando las dos
-aserciones y mostrando los valores reales si vuelven a fallar.
+JWT/UID simulado en PostgreSQL no valida Auth remoto, Data API con sesion real
+ni recorrido visual de navegador. Advisors, configuracion fiscal operativa y
+matriz ACC/IT/INT siguen pendientes; no se certifica todo Finanzas/Documento 19.
 
-La correccion no cambia la migracion, las funciones ni los permisos. El script
-resume-commercial-flow-local.py conserva el log y el restore existente, compara
-los cinco cuerpos de funciones instaladas contra la plantilla ensayada, ejecuta
-28 pruebas y la compilacion antes de actualizar la base local habitual.
-Regresion completa y build del candidato corregido: PENDIENTES.
+Master conserva escritura directa autorizada por RLS: las RPC invoker no son
+un canal exclusivo. Las validaciones nuevas no sustituyen automaticamente
+contratos legados como create_invoice_v2; falta revision integral de esas APIs.
+Versiones posteriores de propuestas, Quick Sale sin oportunidad y conversion
+multimoneda gobernada no quedan certificados.
 
-Referencia: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-EXPRESSION-EVAL
+La plantilla y los instaladores preparatorios quedan en el historial Git.
+El runner final referencia la migracion generada por CLI y conserva modo ejecutable.
+Main y produccion no se modificaron. Release no autorizado.
