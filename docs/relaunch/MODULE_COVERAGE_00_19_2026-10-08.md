@@ -58,3 +58,20 @@ Los criterios DOC12 relacionados continúan `NO EJECUTADO`; no se cambió su
 clasificación ni se inventaron IDs. Este checkpoint fue documental: sin
 checkout local ni PostgreSQL/Docker en la sesión, no se ejecutaron nueva
 regresión ni build. No hubo cambios de código, esquema, permisos o datos.
+
+## Actualización de trazabilidad y plan — 2026-10-08
+
+La auditoría funcional de esta fecha amplía este inventario, sin reescribir
+la evidencia histórica. Ver:
+
+- `FUNCTIONAL_AUDIT_00_19_2026-10-08.md` — alcance, evidencia y brechas
+  por DOC00–19, con foco en BI, DOTS/automatización y Centro Ejecutivo/ULi.
+- `RELEASE_CLOSURE_PLAN_00_19_2026-10-08.md` — dependencias, camino
+  crítico, trabajo paralelo, entregas, aceptación, cronograma y recursos.
+- `acceptance/REQUIREMENTS_TRACEABILITY_00_19_2026-10-08.csv` — 401 filas
+  exactas de ACC/IT/INT, sin aprobar por similitud ni marcar aceptación.
+- `acceptance/SOURCE_SECTION_COVERAGE_00_19_2026-10-08.csv` — índice de
+  los 20 DOCX y sus hashes/secciones principales.
+
+La clasificación de módulos de este inventario describe cobertura funcional,
+no aceptación formal. La matriz fuente de criterios mantiene `NO EJECUTADO`.

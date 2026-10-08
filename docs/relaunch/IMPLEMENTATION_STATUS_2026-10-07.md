@@ -952,3 +952,60 @@ comportamiento no cambia `NO EJECUTADO` a PASS.
 con evidencia local previa. Doble control/expiración Master, auditoría
 central, MFA por riesgo, sesiones remotas y aceptación en staging quedan
 pendientes. **M00 = PARTIAL.** No se inicia M02.
+
+## Auditoría funcional y plan de cierre de visión 00–19 — 2026-10-08
+
+Se añadió una auditoría funcional trazable de los documentos rectores y un
+plan de cierre por dependencias. El alcance fue documental y de inspección;
+no se añadieron funciones ni se alteraron permisos, datos o servicios.
+
+### Fuentes y trazabilidad
+
+- Se cotejaron los SHA-256 de los 20 DOCX rectores contra el inventario
+  versionado: 20/20 coinciden.
+- El registro formal mantiene 401 IDs/casos únicos (361 ACC + 24 IT +
+  16 INT), todos con ejecución formal `NO EJECUTADO` en el origen.
+- La clasificación del registro: 44 CUBIERTO/LISTO PARA EJECUTAR, 49
+  STAGING, 308 BLOQUEADO POR FUNCIÓN PENDIENTE, 0 NO APLICA aprobado.
+- Los documentos 00–11 no aportan IDs de aceptación propios en el
+  inventario; sus reglas deben enlazarse a criterios existentes o a
+  criterios complementarios aprobados. No se inventaron IDs ACC ni se
+  redujo alcance.
+
+### Validación de esta sesión
+
+- `node --test scripts/relaunch/finance-summary.test.cjs`: PASS, 1 suite.
+- `npx --no-install tsc --noEmit`: PASS.
+- `npm run build`: PASS, Next.js build y 11/11 páginas estáticas. Esta
+  verificación es de compilación, sin conexión a Supabase.
+- Regresión SQL: NO EJECUTADA en esta sesión; PostgreSQL local no respondía,
+  Docker no estaba disponible y el dump de baseline no estaba presente en
+  el runtime actual. Los 28/28 que constan en Checkpoint 04D son evidencia
+  histórica registrada y no se reportan como ejecución actual.
+- No se ejecutaron Auth/Storage administrados, navegador E2E, staging ni
+  producción. No se tocaron `main`, producción, datos, esquema o permisos.
+
+### Entregables documentales
+
+- Auditoría funcional y límites por documento:
+  `docs/relaunch/FUNCTIONAL_AUDIT_00_19_2026-10-08.md`.
+- Plan de cierre, camino crítico, paralelismo, entregas, recursos y rangos:
+  `docs/relaunch/RELEASE_CLOSURE_PLAN_00_19_2026-10-08.md`.
+- Matriz de trazabilidad de 401 criterios/casos:
+  `docs/relaunch/acceptance/REQUIREMENTS_TRACEABILITY_00_19_2026-10-08.csv`.
+- Índice de 20 documentos, versión, hash y secciones principales:
+  `docs/relaunch/acceptance/SOURCE_SECTION_COVERAGE_00_19_2026-10-08.csv`.
+
+### Decisión
+
+El núcleo operativo, comercial y financiero existente se conserva; la
+visión integral aún no está completa. BI 07, Chat V2 10 y DOTS/IA 13–18
+requieren implementación; M19 tiene una base financiera/comercial, pero el
+Centro Ejecutivo/ULi sigue parcial. La fase 0 y una parte determinística de
+la fase 1 de DOC19 pueden avanzar con contratos y fixtures sintéticos en
+paralelo, con ratios, acciones y cifras reales deshabilitados hasta cerrar
+sus fuentes, permisos y reconciliación.
+
+El plan es una propuesta de secuencia, no autorización de implementación,
+exclusión ni producción. M00 y los módulos incompletos permanecen parciales;
+la ejecución formal de aceptación sigue pendiente.
