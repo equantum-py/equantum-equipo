@@ -28,36 +28,92 @@ MIGRATIONS=(
   "20261008031852_commercial_flow_v3.sql"
 )
 
-PASS=0
-FAIL=0
+run_migrations() {
+  local script_dir repo_root branch commit docker_context container_state identity actual_db actual_user sql_tests name file rc
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  repo_root="$(cd "$script_dir/../.." && pwd)"
+  branch="$(git -C "$repo_root" branch --show-current 2>/dev/null)"
+  commit="$(git -C "$repo_root" rev-parse --short HEAD 2>/dev/null)"
 
-for name in "${MIGRATIONS[@]}"; do
-  file="supabase/migrations/$name"
-
-  docker exec -i "$CONTAINER" \
-    psql -U postgres -d "$DB" -v ON_ERROR_STOP=1 -q \
-    < "$file" \
-    > /tmp/equantum-migration.out \
-    2> /tmp/equantum-migration.err
-
-  rc=$?
-
-  if [ "$rc" -eq 0 ]; then
-    echo "PASS | $name"
-    PASS=$((PASS+1))
-  else
-    echo "FAIL | $name"
-    cat /tmp/equantum-migration.err
-    FAIL=$((FAIL+1))
-    break
+  if [ "$branch" != "relanzamiento-2026" ]; then
+    echo "FAIL: rama requerida relanzamiento-2026; rama actual=${branch:-desconocida}"
+    return 1
   fi
-done
 
-echo "ATTEMPTED=$((PASS+FAIL))"
-echo "PASS=$PASS"
-echo "FAIL=$FAIL"
-echo "TOTAL=${#MIGRATIONS[@]}"
+  if [ "$CONTAINER" != "equantum-staging" ]; then
+    echo "FAIL: contenedor permitido=equantum-staging; recibido=$CONTAINER"
+    return 1
+  fi
 
-if [ "$FAIL" -gt 0 ]; then
-  false
-fi
+  case "$DB" in
+    equantum_restore_clean|equantum_staging) ;;
+    *)
+      echo "FAIL: DB permitida=equantum_restore_clean o equantum_staging; recibido=$DB"
+      return 1
+      ;;
+  esac
+
+  container_state="$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)"
+  if [ "$container_state" != "true" ]; then
+    echo "FAIL: contenedor local $CONTAINER no está activo"
+    return 1
+  fi
+
+  identity="$(docker exec "$CONTAINER" psql -U postgres -d "$DB" -X -At -F '|' -c 'SELECT current_database(), current_user' 2>&1)"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "FAIL: no se pudo abrir la base objetivo; container=$CONTAINER database=$DB"
+    echo "$identity"
+    return 1
+  fi
+
+  IFS='|' read -r actual_db actual_user <<< "$identity"
+  if [ "$actual_db" != "$DB" ] || [ "$actual_user" != "postgres" ]; then
+    echo "FAIL: identidad inesperada; pedido=$DB/postgres recibido=$actual_db/$actual_user"
+    return 1
+  fi
+
+  docker_context="$(docker context show 2>/dev/null)"
+  docker_context="${docker_context:-desconocido}"
+  sql_tests="$(find "$repo_root/supabase/tests" -maxdepth 1 -type f -name '*.sql' 2>/dev/null | wc -l | tr -d '[:space:]')"
+  echo "MIGRATIONS LOCAL | branch=$branch commit=$commit docker_context=$docker_context container=$CONTAINER database=$actual_db user=$actual_user migrations=${#MIGRATIONS[@]} sql_tests=${sql_tests:-0}"
+
+  for name in "${MIGRATIONS[@]}"; do
+    file="$repo_root/supabase/migrations/$name"
+    if [ ! -f "$file" ]; then
+      echo "FAIL: falta migración versionada $file"
+      return 1
+    fi
+  done
+
+  local pass=0 fail=0
+  for name in "${MIGRATIONS[@]}"; do
+    file="$repo_root/supabase/migrations/$name"
+    docker exec -i "$CONTAINER" \
+      psql -U postgres -d "$DB" -X -v ON_ERROR_STOP=1 -q \
+      < "$file" > /tmp/equantum-migration.out 2> /tmp/equantum-migration.err
+    rc=$?
+
+    if [ "$rc" -eq 0 ]; then
+      echo "PASS | $name"
+      pass=$((pass+1))
+    else
+      echo "FAIL | $name"
+      cat /tmp/equantum-migration.err
+      fail=$((fail+1))
+      break
+    fi
+  done
+
+  echo "ATTEMPTED=$((pass+fail))"
+  echo "PASS=$pass"
+  echo "FAIL=$fail"
+  echo "TOTAL=${#MIGRATIONS[@]}"
+
+  if [ "$fail" -gt 0 ]; then
+    return 1
+  fi
+  return 0
+}
+
+run_migrations "$@"

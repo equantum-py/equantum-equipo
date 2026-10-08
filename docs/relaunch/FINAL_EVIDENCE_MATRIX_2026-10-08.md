@@ -1,7 +1,7 @@
 # Matriz final de evidencias — eQuantum Relanzamiento
 
 Fecha: 2026-10-08  
-Candidato: `relanzamiento-2026` — `4674502`  
+Candidato revisado en GitHub: `relanzamiento-2026` — `8b38489`  
 Alcance: evidencia local existente y gates pendientes. PostgreSQL local no certifica servicios administrados de Supabase.
 
 | Gate | Estado | Evidencia disponible | Qué falta / impacto |
@@ -12,7 +12,7 @@ Alcance: evidencia local existente y gates pendientes. PostgreSQL local no certi
 | Build y TypeScript | PASS | Build Next.js, TypeScript y 11/11 páginas estáticas | Build no es E2E |
 | Tests Node financieros | PASS | 9/9 tests del resumen/circuito | No acredita sesión real ni recorrido visual |
 | Seguridad financiera / IA | PASS | Boundary y permisos validados localmente; rechazo antes de contexto/proveedor | Probar servicios y sesiones reales en staging |
-| Storage Portal A/B en PostgreSQL | PASS | Política instalada; A ve A/no B, B ve B/no A; rollback y cero residuos | Servicio remoto y recorrido Auth/Storage E2E |
+| Storage Portal A/B en PostgreSQL | PASS | Política instalada; A ve A/no B, B ve B/no A; rollback y cero residuos, según evidencia del checkpoint local | Script de Auth/Storage real preparado; falta ejecutarlo en staging y confirmar URL privada/internal |
 | Acceso de usuario interno a Storage | PARTIAL | Política permite el acceso interno definido | Confirmar el flujo con identidad interna real en staging |
 | Deployment Vercel del candidato | PARTIAL | Estado del commit indica deployment completado | Verificar rutas y flujos visuales en Preview |
 | Matriz de aceptación: 361 ACC | PENDING | Matriz versionada localizada | Ejecución, evidencia y aprobación criterio por criterio; gate de release |

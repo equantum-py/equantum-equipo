@@ -187,7 +187,7 @@ Main: NO MODIFICAR
 | financial_info DB | PASS | negative tests DB |
 | financial_info API | PARTIAL | Asistente HTTP local validado en checkpoint 03; falta cobertura del resto de APIs aplicables |
 | financial_info IA | PASS | Checkpoint 03: bloqueo previo a contexto/proveedor, dentro del alcance local probado |
-| Storage privado | PARTIAL | Checkpoint 04B: A/B PostgreSQL local PASS; servicio remoto y flujos E2E pendientes |
+| Storage privado | PARTIAL | PostgreSQL local A/B PASS documentado; script de Auth/Storage real preparado, aún no ejecutado en staging |
 | Master protegido | PASS | Cuenta master preservada |
 
 ---
@@ -801,3 +801,43 @@ Fecha: 2026-10-08. Clasificación documental fila por fila; no se repitieron pru
 - Conclusión: listo para organizar/ejecutar validación final; producción bloqueada hasta aprobar los ACC críticos, los IT/INT críticos y los gates externos.
 
 Detalle: docs/relaunch/FINAL_EVIDENCE_MATRIX_2026-10-08.md y docs/relaunch/acceptance/FINAL_CLASIFICACION_ACC_IT_INT_2026-10-08.csv.
+
+
+## Checkpoint 04E — Preparación de validación Supabase Storage real
+
+La rama actual incluye una prueba reproducible para ejecutar el flujo con
+sesiones existentes de Portal A, Portal B y personal interno autorizado:
+
+`npm run test:storage:staging`
+
+La prueba usa únicamente la clave pública/anon y contraseñas tomadas de
+variables de entorno. No crea cuentas, no usa service_role, carga objetos
+con prefijo QA bajo el UID autenticado y los elimina al finalizar. Nunca
+imprime credenciales ni URLs firmadas.
+
+### Criterios rectores asociados
+
+- DOC12 / ACC-SEC-008: archivo de Cliente A solicitado por usuario de B;
+  acceso denegado y URL privada no utilizable.
+- DOC12 / ACC-DATA-001: Storage privado y RLS/autorización impiden acceso
+  fuera del alcance.
+
+La prueba remota cubre acceso autenticado por ruta, generación de URL firmada
+por el solicitante, acceso anon, privacidad del bucket y cuenta interna
+autorizada. No trata una URL firmada emitida para A como si quedara ligada a
+la identidad de A: una URL firmada funciona como credencial bearer mientras
+está vigente. Si ACC-SEC-008 exige que B no pueda usar una URL de A que le fue
+entregada deliberadamente, ese requisito requiere validación/decisión de
+arquitectura; no se declara probado por el test.
+
+### Estado
+
+- PostgreSQL local A/B: PASS según la evidencia existente del Checkpoint 04D;
+  esta sesión no tuvo acceso al contenedor para repetir la prueba.
+- Test Auth/Storage contra Supabase administrado: BLOCKED EXTERNAL VALIDATION;
+  faltan staging Supabase y cuentas de prueba autorizadas en este entorno.
+- Acceso interno: el script requiere una cuenta interna habilitada y valida
+  que la política actual permita el acceso temporal previsto por el contrato.
+  La autorización más granular por rol debe permanecer alineada con la matriz
+  de permisos y no se infiere de una sesión exitosa aislada.
+- Producción y main: sin cambios.

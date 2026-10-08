@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:storage:staging": "node scripts/relaunch/storage-staging-rls.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
