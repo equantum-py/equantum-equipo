@@ -841,3 +841,38 @@ arquitectura; no se declara probado por el test.
   La autorización más granular por rol debe permanecer alineada con la matriz
   de permisos y no se infiere de una sesión exitosa aislada.
 - Producción y main: sin cambios.
+
+
+## Checkpoint M00 — Inventario inicial de visión y cobertura 00–19 — 2026-10-08
+
+**Referencia remota verificada:** rama `relanzamiento-2026`, HEAD `2c0f3cd64e3b61b96a5e934c105d670474c90b7c`.  
+**`main` observado sin cambios:** `c2b41570a5600a585c76ac77d798927e07549832`.  
+**Fuentes:** ZIP rector adjunto con los 20 documentos 00–19; árbol GitHub de 112 archivos; este estado de implementación y la matriz de aceptación existente.
+
+### Alcance de esta pasada
+
+Se leyó completo el Documento 00 y, como fundamentos transversales, los Documentos 01, 02, 11 y 12. El ZIP contiene los 20 documentos. Los documentos de cada módulo restante se leerán en su checkpoint antes de implementar ese módulo; este inventario inicial usa el estado versionado y el árbol actual, y no equivale a una auditoría funcional completa de cada módulo.
+
+### Resultado del módulo 00
+
+El Documento 00 es el contrato transversal de producto, no una pantalla ni un servicio independiente. Define como principios: datos reales y fuente de verdad, seguridad y privacidad por alcance, decisión humana, trazabilidad, explicabilidad, continuidad, experiencia simple, adopción, intervención mínima y evolución incremental; IA no sustituye permisos ni decisiones humanas.
+
+**Estado del documento rector: IMPLEMENTADO / DEFINITIVO.**  
+**Conformidad del sistema completo: PARCIAL.** Hay evidencia local de varias capacidades operativas descritas por el 00, pero el estado del repositorio deja módulos como BI, Chat V2, DOTS, orquestación, memoria, gobernanza, evaluación y observabilidad pendientes; además, la ejecución formal de criterios y casos de integración sigue abierta.
+
+No se agregó una función independiente para M00: hacerlo duplicaría responsabilidades de sus módulos propietarios. La acción correcta de este módulo es mantener sus principios como criterios de lectura para los módulos 01–19 y registrar brechas, sin declarar que el sistema completo ya los cumple.
+
+### Matriz inicial de cobertura
+
+La matriz por módulo está en `docs/relaunch/MODULE_COVERAGE_00_19_2026-10-08.md`. Sus estados son de inventario inicial. `PARCIAL` significa que hay una capacidad o evidencia relacionada y que quedan brechas; `FALTANTE` sigue el estado PENDING explícito del resumen vigente. Ninguna fila representa aceptación formal PASS. Las pruebas locales no sustituyen staging ni E2E.
+
+### Pruebas y límites
+
+- Verificación de fuentes: ZIP con 20 documentos DOCX; branch y HEAD consultados en GitHub; árbol remoto sin truncamiento (112 archivos).
+- Se consultaron los registros de aceptación existentes para distinguir criterios definidos de criterios ejecutados; el registro actual conserva `NO EJECUTADO` en las filas formales.
+- No hubo cambios de código, esquema, datos ni permisos. No aplica build ni regresión ejecutable a este checkpoint documental.
+- Este entorno no ofrece un checkout local; por eso no se afirma `git status` local ni se repiten comandos de build/SQL.
+
+### Clasificación del checkpoint M00
+
+**PARCIAL — documento rector consolidado; conformidad global pendiente de la validación de módulos propietarios y de aceptación formal.** No se avanza automáticamente a otro módulo.
