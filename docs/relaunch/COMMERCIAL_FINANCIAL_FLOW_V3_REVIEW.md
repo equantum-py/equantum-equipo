@@ -46,3 +46,20 @@ versiones posteriores de propuestas, Quick Sale sin oportunidad, conversion
 multimoneda gobernada y cierre de todos los criterios ACC/IT/INT.
 No representa cierre completo de Finanzas/Documento 19 ni autorizacion de release.
 Main y produccion no se modifican.
+
+## Reanudacion del ensayo local
+
+Migracion generada por CLI: 20261008031852_commercial_flow_v3.sql.
+Restore baseline y runner: 22/22 PASS. El circuito PYG/USD con Master,
+reintentos y lector financiero paso; la regresion se detuvo en la comprobacion
+inicial de commission_assignment_v3, que combinaba escritura y lectura en una
+misma expresion. Se separan en sentencias consecutivas, conservando las dos
+aserciones y mostrando los valores reales si vuelven a fallar.
+
+La correccion no cambia la migracion, las funciones ni los permisos. El script
+resume-commercial-flow-local.py conserva el log y el restore existente, compara
+los cinco cuerpos de funciones instaladas contra la plantilla ensayada, ejecuta
+28 pruebas y la compilacion antes de actualizar la base local habitual.
+Regresion completa y build del candidato corregido: PENDIENTES.
+
+Referencia: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-EXPRESSION-EVAL

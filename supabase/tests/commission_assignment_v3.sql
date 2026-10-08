@@ -45,13 +45,16 @@ END $$;
 SET LOCAL ROLE authenticated;
 DO $$
 DECLARE p uuid:=current_setting('qa.assign.proposal')::uuid; a uuid:=current_setting('qa.assign.v1')::uuid;
-        rejected boolean:=false;
+        rejected boolean:=false; returned_id uuid; selected_policy uuid;
 BEGIN
   IF current_user<>'authenticated' OR EXISTS(SELECT 1 FROM pg_roles WHERE rolname=current_user AND (rolsuper OR rolbypassrls)) THEN
     RAISE EXCEPTION 'FAIL: rol omite RLS'; END IF;
-  IF public.assign_proposal_commission_v3(p,a) IS DISTINCT FROM p
-     OR (SELECT commission_policy_id FROM public.proposals WHERE id=p) IS DISTINCT FROM a THEN
-    RAISE EXCEPTION 'FAIL: Master no asigna version'; END IF;
+  -- Separar escritura y lectura: SQL no garantiza el orden de subexpresiones.
+  returned_id:=public.assign_proposal_commission_v3(p,a);
+  SELECT commission_policy_id INTO selected_policy FROM public.proposals WHERE id=p;
+  IF returned_id IS DISTINCT FROM p OR selected_policy IS DISTINCT FROM a THEN
+    RAISE EXCEPTION 'FAIL: Master assignment returned=%, proposal=%, selected=%, expected=%',
+      returned_id,p,selected_policy,a; END IF;
   PERFORM public.assign_proposal_commission_v3(p,a);
   PERFORM public.assign_proposal_commission_v3(p,NULL);
   IF (SELECT commission_policy_id FROM public.proposals WHERE id=p) IS NOT NULL THEN
