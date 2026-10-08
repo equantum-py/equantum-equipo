@@ -282,4 +282,3 @@ function Section({title,children}:{title:string;children:React.ReactNode}){
 function Empty({text}:{text:string}){
   return <p className="py-6 text-center text-sm text-slate-400">{text}</p>;
 }
-
