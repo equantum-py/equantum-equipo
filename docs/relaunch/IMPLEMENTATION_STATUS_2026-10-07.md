@@ -82,11 +82,10 @@ Main: NO MODIFICAR
 
 ## Estados
 
-- PASS: implementado y demostrado
-- PARTIAL: implementado parcialmente o falta evidencia final
-- PENDING: pendiente
-- BLOCKED: bloqueado por dependencia
-- N/A: no aplica, con justificación
+- PASS: implementación con evidencia suficiente dentro del alcance indicado.
+- PARTIAL: implementación probada localmente; falta validación integral o externa.
+- BLOCKED: depende de staging real, infraestructura administrada o aprobación externa.
+- PENDING: implementación o validación requerida aún no realizada.
 
 ---
 
@@ -758,3 +757,31 @@ NO equivale a:
 
 Producción y `main` permanecen fuera de este checkpoint.
 
+
+
+## Cierre final del relanzamiento — 2026-10-08
+
+**Candidato revisado:** `relanzamiento-2026` en `4674502`  
+**Conclusión:** listo para entrar a validación final; **no autorizado para producción**.
+
+Este cierre reutiliza la evidencia del CHECKPOINT 04D, registrada para el estado versionado actual: 22/22 migraciones, 28/28 pruebas SQL, TypeScript y build Next.js PASS, 11/11 páginas estáticas, además de Node 9/9 para el circuito financiero. No se repitió la regresión: las pruebas cubren el mismo candidato y el cambio de cierre es documental. El estado Vercel de este commit informa que la publicación terminó; eso no prueba los recorridos E2E ni los servicios Supabase administrados.
+
+### Conclusión operativa
+
+1. **Funciona hoy:** flujos comerciales y financieros implementados en el alcance V2/V3 probado; tareas, tickets, Radar y Triage; control financiero antes de IA; RLS PostgreSQL local, incluidos los adjuntos Portal A/B; snapshots fiscales y de comisión. Las funciones marcadas PASS conservan el alcance local descrito en sus evidencias.
+2. **Probado:** restore y reconciliación del baseline; 22 migraciones ordenadas; suite SQL 28/28; tests Node 9/9; TypeScript/build; pruebas locales de RLS, seguridad financiera y flujos PYG/USD.
+3. **Falta realmente:** ejecutar/revisar formalmente los 361 criterios ACC y los 40 casos IT/INT; completar los E2E visuales y de sesión real; hacer el ensayo final de rollback del candidato; resolver configuraciones operativas fiscales/multimoneda que requieran decisiones de negocio. Los módulos Chat/eQ/DOTS y BI/ULi siguen PENDING en el alcance documentado; si pertenecen a este release, deben implementarse y validarse antes de aprobarlo.
+4. **No bloquea por sí solo:** la consulta histórica que devolvió cero políticas Storage. En el restore limpio actual la política existe y el test A/B local pasa. Tampoco bloquean repetir el build o la suite local ya aprobados para este mismo candidato.
+5. **Sí bloquea producción:** falta de aprobación de ACC/IT/INT críticos, E2E final, rollback aprobado, configuración de negocio que afecte el alcance financiero, revisión de los controles administrados de Supabase y autorización explícita. La matriz formal sin ejecutar impide afirmar que el release satisface todos sus criterios.
+6. **Debe probarse en staging real:** Auth y Data API con sesiones reales; upload/download de Storage para A/B y usuario interno según la política; flujos visuales de Portal y Comercial/Finanzas; advisors y APIs legadas aplicables; migración y rollback del candidato en staging. No se sustituye esta evidencia con PostgreSQL local.
+7. **Listo para validación final:** sí. **Listo para producción:** no.
+
+### Matriz formal de aceptación
+
+- 361 criterios ACC: **PENDING** — la matriz de trabajo los registra sin ejecución formal. Esto no demuestra por sí solo que falte implementación en cada criterio.
+- 40 casos IT/INT: **PENDING** — falta ejecución y aprobación formal.
+- Los controles con dependencia de Supabase administrado quedan **BLOCKED** hasta disponer de staging real.
+- Producción queda **BLOCKED** hasta cerrar los gates anteriores y obtener autorización explícita.
+
+La matriz resumida por gate y evidencia está en `docs/relaunch/FINAL_EVIDENCE_MATRIX_2026-10-08.md`.  
+`main` y producción permanecen intactos. No se agregaron funcionalidades ni se modificaron datos reales.
