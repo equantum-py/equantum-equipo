@@ -637,3 +637,23 @@ Evidencia local: /home/equantumg/equantum-fiscal-governance-validacion.txt.
 Alcance: backend y RLS PostgreSQL local, con fixtures de ingeniería. Las referencias almacenadas no certifican validez legal; no se precargaron tasas productivas, no se usó IA para clasificación y no se inventaron aprobaciones de datos legacy. UI/E2E, aprobación/configuración operativa real, revisión final de seguridad/advisors y rollback de release siguen pendientes.
 
 Se integra únicamente a relanzamiento-2026. Main y producción sin cambios.
+
+## Políticas financieras — interfaz y regresión local
+
+Candidato validado: 931115b. Fecha UTC: 2026-10-08.
+
+Se incorporó el panel de versiones fiscales, versiones de comisión y aprobación
+fiscal de partidas existentes desde Finanzas para la cuenta maestra activa.
+La aprobación usa approve_proposal_item_fiscal_v3 y el cálculo de PostgreSQL.
+Este cambio no agrega migraciones ni permisos.
+
+Evidencia local entregada: pruebas financieras 9/9; TypeScript y build PASS;
+11/11 páginas estáticas; QA SQL PASS=26 FAIL=0 TOTAL=26 en
+equantum_restore_clean. git diff --check sin errores.
+Log: /home/equantumg/equantum-policies-ui-validacion.txt.
+
+El recorrido visual y las operaciones Data API con sesión real no están
+validados todavía. La asignación de comisión a propuestas, la configuración
+fiscal operativa aprobada y los flujos comerciales completos siguen pendientes.
+No se cierra automáticamente ningún criterio ACC/IT/INT con esta evidencia.
+Main y producción no se modificaron.

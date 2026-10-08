@@ -1,4 +1,4 @@
-# Políticas financieras — candidato de interfaz
+# Políticas financieras — evidencia de interfaz
 
 Base: relanzamiento-2026, 1095759.
 
@@ -17,9 +17,16 @@ Las versiones son inmutables y se crean por código y número explícitos.
 El panel muestra errores, bloquea envíos simultáneos y carga los registros con
 paginación. Se carga al abrirlo desde Finanzas.
 
-Validación disponible: TypeScript estricto del componente nuevo y su cliente
-Supabase en el entorno de preparación. Compilación completa del repositorio,
-regresión SQL del candidato y recorrido de navegador: PENDIENTES.
+Validación local del candidato 931115b, ejecutada en Cloud Shell:
+- git diff --check: sin errores.
+- Pruebas del resumen financiero: 9/9 PASS.
+- TypeScript del repositorio: PASS.
+- Build Next.js 15.5.27: PASS, 11/11 páginas estáticas.
+- QA SQL sobre equantum_restore_clean: PASS=26 FAIL=0 TOTAL=26.
+- Evidencia local: /home/equantumg/equantum-policies-ui-validacion.txt.
+
+El recorrido de navegador y las operaciones por Data API con una sesión real
+siguen PENDIENTES. Compilar y pasar la regresión SQL no certifica ese recorrido.
 
 La creación de una versión de comisión no asigna esa versión a una propuesta.
 La selección de comisión por propuesta sigue pendiente de un contrato de escritura
