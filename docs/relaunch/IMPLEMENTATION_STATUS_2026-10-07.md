@@ -785,3 +785,19 @@ Este cierre reutiliza la evidencia del CHECKPOINT 04D, registrada para el estado
 
 La matriz resumida por gate y evidencia está en `docs/relaunch/FINAL_EVIDENCE_MATRIX_2026-10-08.md`.  
 `main` y producción permanecen intactos. No se agregaron funcionalidades ni se modificaron datos reales.
+
+
+## Checkpoint 10 — Mapa definitivo de validación y bloqueantes
+
+Fecha: 2026-10-08. Clasificación documental fila por fila; no se repitieron pruebas locales.
+
+- Alcance inventariado: DOC12–DOC19 + 40 IT/INT; 401 filas. Sin exclusiones aprobadas, NO APLICA=0.
+- ACC 361: 39 cubiertos/listos para ejecutar, 48 requieren staging, 274 dependen de función pendiente.
+- IT/INT 40: 5 cubiertos/listos, 1 requiere staging, 34 dependen de función pendiente.
+- Conteo combinado: 44 / 49 / 308 / 0, en ese orden. Las 401 filas conservan NO EJECUTADO; CUBIERTO no significa PASS.
+- ACC con severidad BLOQUEANTE: 131; 23 listos aún sin ejecución formal, 22 requieren staging, 86 dependen de función pendiente.
+- La matriz cruza los tests existentes por comportamiento probado; cada fila identifica el archivo y limita expresamente el alcance cuando el test no prueba el criterio completo.
+- No se reasignó severidad a IT/INT porque la matriz fuente no tiene campo individual de criticidad.
+- Conclusión: listo para organizar/ejecutar validación final; producción bloqueada hasta aprobar los ACC críticos, los IT/INT críticos y los gates externos.
+
+Detalle: docs/relaunch/FINAL_EVIDENCE_MATRIX_2026-10-08.md y docs/relaunch/acceptance/FINAL_CLASIFICACION_ACC_IT_INT_2026-10-08.csv.
