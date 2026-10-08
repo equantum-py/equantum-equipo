@@ -23,6 +23,7 @@ MIGRATIONS=(
   "20261007_rls_model_v2.sql"
   "20261007_security_portal_rls_v3.sql"
   "20261008013538_release_guards_v3.sql"
+  "20261008021415_commission_policies_v3.sql"
 )
 
 PASS=0
