@@ -27,3 +27,16 @@ Alcance: evidencia local existente y gates pendientes. PostgreSQL local no certi
 ## Decisión
 
 El candidato está **listo para validación final**, pero **no está listo para producción**. Los PASS se limitan al alcance local descrito. Los estados BLOCKED requieren infraestructura real; PENDING refleja trabajo de validación o implementación aún no completado.
+
+
+## Clasificación fila por fila — 2026-10-08
+
+Archivo: `docs/relaunch/acceptance/FINAL_CLASIFICACION_ACC_IT_INT_2026-10-08.csv`.
+
+Conteo sobre 401 filas: **88 CUBIERTO / LISTO PARA EJECUTAR**, **27 STAGING**, **286 BLOQUEADO POR FUNCIÓN PENDIENTE**, **0 NO APLICA**. Las filas conservan `NO EJECUTADO`; ninguna queda marcada PASS por este cruce.
+
+- ACC: 361; 83 cubierto, 23 staging, 255 función pendiente.
+- IT/INT: 40; 5 cubierto, 4 staging, 31 función pendiente.
+- ACC con severidad documental BLOQUEANTE: **131**. Distribución: 36 con evidencia lista para ejecución formal, 13 requieren staging y 82 dependen de funcionalidad pendiente.
+
+La severidad BLOQUEANTE identifica el gate rector; la columna de clasificación no es resultado de ejecución. No se marcó NO APLICA porque el inventario rector incluye los módulos 12–19 y no se encontró una exclusión explícita en el paquete de aceptación versionado.
