@@ -29,14 +29,60 @@ Alcance: evidencia local existente y gates pendientes. PostgreSQL local no certi
 El candidato está **listo para validación final**, pero **no está listo para producción**. Los PASS se limitan al alcance local descrito. Los estados BLOCKED requieren infraestructura real; PENDING refleja trabajo de validación o implementación aún no completado.
 
 
-## Clasificación fila por fila — 2026-10-08
+## Mapa definitivo de validación y bloqueantes — 2026-10-08
 
-Archivo: `docs/relaunch/acceptance/FINAL_CLASIFICACION_ACC_IT_INT_2026-10-08.csv`.
+**Alcance:** los registros rectores versionados incluyen DOC12–DOC19 y 40 casos IT/INT. No encontramos una exclusión aprobada; los 401 registros permanecen en el alcance de salida. No se asignó NO APLICA.
 
-Conteo sobre 401 filas: **88 CUBIERTO / LISTO PARA EJECUTAR**, **27 STAGING**, **286 BLOQUEADO POR FUNCIÓN PENDIENTE**, **0 NO APLICA**. Las filas conservan `NO EJECUTADO`; ninguna queda marcada PASS por este cruce.
+“CUBIERTO / LISTO PARA EJECUTAR” indica que hay implementación y evidencia técnica relacionada para ejecutar el criterio formal. No significa PASS. La columna de ejecución permanece **NO EJECUTADO** en las 401 filas. Los tests se relacionaron por el comportamiento que efectivamente prueban; cuando cubren solo una parte o requieren servicio/sesión real, la justificación lo dice.
 
-- ACC: 361; 83 cubierto, 23 staging, 255 función pendiente.
-- IT/INT: 40; 5 cubierto, 4 staging, 31 función pendiente.
-- ACC con severidad documental BLOQUEANTE: **131**. Distribución: 36 con evidencia lista para ejecución formal, 13 requieren staging y 82 dependen de funcionalidad pendiente.
+### Conteo por inventario
 
-La severidad BLOQUEANTE identifica el gate rector; la columna de clasificación no es resultado de ejecución. No se marcó NO APLICA porque el inventario rector incluye los módulos 12–19 y no se encontró una exclusión explícita en el paquete de aceptación versionado.
+| Alcance | Total | Cubierto / listo | Requiere staging | Función pendiente | No aplica |
+|---|---:|---:|---:|---:|---:|
+| ACC | 361 | 39 | 48 | 274 | 0 |
+| IT/INT | 40 | 5 | 1 | 34 | 0 |
+| **Total** | **401** | **44** | **49** | **308** | **0** |
+
+### Conteo por documento / paquete
+
+| Paquete | Total | Cubierto / listo | Requiere staging | Función pendiente |
+|---|---:|---:|---:|---:|
+| DOC12 | 139 | 33 | 40 | 66 |
+| DOC13 | 13 | 0 | 0 | 13 |
+| DOC14 | 15 | 0 | 2 | 13 |
+| DOC15 | 15 | 0 | 0 | 15 |
+| DOC16 | 30 | 0 | 1 | 29 |
+| DOC17 | 42 | 2 | 0 | 40 |
+| DOC18 | 40 | 0 | 0 | 40 |
+| DOC19 | 67 | 4 | 5 | 58 |
+| P01 | 24 | 1 | 0 | 23 |
+| P02 | 16 | 4 | 1 | 11 |
+
+### Bloqueantes explícitos
+
+La fuente marca **131 ACC como BLOQUEANTE**:
+
+| Situación del bloqueante | Cantidad |
+|---|---:|
+| CUBIERTO / listo para ejecutar, aún no ejecutado formalmente | 23 |
+| Requiere staging real | 22 |
+| Depende de función pendiente | 86 |
+| **Total** | **131** |
+
+Los 131 se distribuyen por fuente así: DOC12 = 61; DOC15 = 6; DOC16 = 22; DOC17 = 19; DOC18 = 23. No hay severidad BLOQUEANTE en DOC13, DOC14 ni DOC19 en la matriz fuente. Los 86 bloqueantes dependientes de función pendiente comprenden 16 de DOC12 y 70 de DOC15–DOC18.
+
+Los IT/INT no tienen una columna de severidad individual. Por eso no se inventa una cantidad adicional de bloqueantes IT/INT. El gate rector sí exige aprobar los casos de integración críticos; los 34 que dependen de funciones ausentes todavía no pueden ejecutarse.
+
+### Bloqueantes reales para producción
+
+1. **Los 131 ACC marcados BLOQUEANTE siguen abiertos.** Ninguno tiene ejecución/aprobación formal en esta matriz; incluso los 23 listos para ejecutar deben aprobarse antes de cerrar el gate.
+2. **Hay 86 bloqueantes que requieren funciones aún pendientes.** Principalmente privacidad/memoria, gobernanza y evaluación de IA, observabilidad, junto con gaps concretos de DOC12.
+3. **Hay 22 bloqueantes que requieren staging real**, incluida seguridad por sesiones/RLS, Storage administrado, flujo de usuarios, configuración fiscal real y ensayo de migración/rollback.
+4. **Los IT/INT críticos siguen sin aprobación formal.** Cinco están listos para ejecutar, uno necesita staging y 34 esperan funciones pendientes; la fuente no declara cuáles son críticos caso por caso.
+5. **Los gates externos siguen abiertos:** sesión real Supabase Auth/Data API/Storage, E2E de Preview, Advisors/APIs legadas aplicables, rollback final y autorización explícita. Esto no se demuestra con QA PostgreSQL local ni con el build.
+
+### Decisión de salida
+
+El candidato está **listo para organizar y ejecutar la validación final**, pero **no está listo para producción**. No se repitieron regresiones ni build en esta clasificación documental. main, producción y datos reales no se modificaron.
+
+Matriz detallada, una fila por criterio/caso: docs/relaunch/acceptance/FINAL_CLASIFICACION_ACC_IT_INT_2026-10-08.csv.
