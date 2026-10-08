@@ -681,3 +681,80 @@ Auth remoto, Data API con sesion real, recorrido visual, advisors y revision de
 APIs legadas siguen pendientes, junto con configuracion fiscal operativa,
 versiones posteriores, Quick Sale sin oportunidad y conversion multimoneda.
 No se cierran automaticamente ACC/IT/INT. Main y produccion sin cambios.
+
+---
+
+## CHECKPOINT 04D — VALIDACIÓN INTEGRAL LOCAL
+
+**Resultado:** PASS dentro del alcance técnico local automatizado.
+
+### Estado validado
+
+- Branch: `relanzamiento-2026`
+- Base validada desde restore limpio: `equantum_restore_clean`
+- Migraciones incluidas en runner: **22**
+- Tests SQL versionados ejecutados: **28**
+- Resultado QA SQL: **28 PASS / 0 FAIL**
+- Build Next.js: **PASS**
+- TypeScript: **PASS**
+- Lint: **PASS**
+- Generación de páginas: **11/11**
+- Storage Portal isolation V3: **PASS**
+- Working tree al inicio de la validación: limpio.
+
+### Cobertura técnica incluida
+
+La suite validó, entre otros:
+
+- servicios, proyectos y tareas;
+- catálogo y pipeline;
+- flujo comercial-financiero;
+- asignación y snapshot de comisiones;
+- frontera financiera para IA;
+- snapshot fiscal;
+- idempotencia financiera;
+- operaciones financieras;
+- RLS financiero;
+- gobernanza fiscal;
+- golden commercial;
+- golden financial;
+- golden radar;
+- golden triage;
+- identidad comercial;
+- reconciliación;
+- seguridad/RLS;
+- permiso financiero sensible;
+- aislamiento Storage/Portal;
+- permisos e historial de tareas;
+- integración tareas/triage;
+- múltiples tareas por ticket.
+
+### Build
+
+`npm run build` completó correctamente con Next.js 15.5.27:
+
+- compilación: PASS;
+- lint/typecheck: PASS;
+- páginas estáticas: 11/11;
+- `/api/ai/assistant`: compilada;
+- `/dashboard`: compilada;
+- `/portal`: compilada;
+- `/portal/login`: compilada.
+
+### Alcance de este PASS
+
+Este checkpoint demuestra que el estado actual versionado supera la
+suite técnica local automatizada sobre el restore utilizado y que la
+aplicación compila correctamente.
+
+NO equivale a:
+
+- 361/361 criterios formales ejecutados;
+- 40/40 casos de integración formal ejecutados;
+- validación E2E completa con usuarios reales en staging remoto;
+- certificación de producción;
+- autorización para modificar `main`;
+- autorización para desplegar a producción.
+
+Producción y `main` permanecen fuera de este checkpoint.
+
