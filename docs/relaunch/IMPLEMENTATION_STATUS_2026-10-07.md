@@ -555,3 +555,22 @@ El test financiero anterior consultaba como postgres sin fixtures y no certifica
 RLS positivo/negativo. Fue reemplazado por prueba con rol real y datos presentes.
 Los criterios formales no se marcaron PASS automaticamente.
 Produccion permanece BLOQUEADA.
+
+## Checkpoint 06 — Resumen financiero por moneda
+
+Ejecución local: 2026-10-07, America/Asuncion (2026-10-08 UTC).
+Candidato probado: 1891cf7c586a754081985e38948194d72c196fd2.
+Carpeta de prueba: /home/equantumg/equantum-finance-review.
+Evidencia local: /home/equantumg/equantum-finance-validacion.txt.
+
+- Tests del helper financiero: 9/9 PASS.
+- TypeScript completo: npx --no-install tsc --noEmit, PASS.
+- Build Next.js 15.5.27: PASS; 11/11 páginas estáticas.
+- QA SQL en equantum_restore_clean, contenedor equantum-staging: PASS=23 FAIL=0 TOTAL=23.
+- git diff --check: PASS.
+
+La vista presenta vendido, facturado, cobrado, pendiente de facturar y pendiente de cobro por moneda. Consultas paginadas; pendiente de facturar por Sale, sin compensar saldos entre ventas. Los tests del helper reproducen DOC12 FIN001 y cifras PYG FIN008, con separación de moneda FIN003.
+
+Alcance: cálculo de presentación y regresión SQL local. No demuestra todavía el recorrido E2E DB→API→UI del Golden ni cierra los ACC completos. Tratamiento fiscal, comisiones/versionado, default y cambio de moneda autorizado, servicio Auth/Storage remoto y gates restantes conservan sus pendientes.
+
+Integración limitada a relanzamiento-2026. Main y producción no se modifican. Sin servicios pagos.

@@ -13,3 +13,9 @@ Este candidato no modifica migraciones, main ni producción. No se invocaron ser
 ## Validación adicional
 
 La primera ejecución en Cloud Shell aprobó 9/9 tests y diff --check, pero TypeScript detuvo la validación con TS2352 por select dinámico. Se reemplazó por consultas con columnas literales y paginación genérica tipada sin conversiones forzadas. La comprobación aislada de tipos de la carga con el cliente Supabase y los 9 tests pasaron después del cambio. Sigue pendiente la repetición de TypeScript del repo completo, build y QA SQL en Cloud Shell; no se marcaron PASS esos pasos.
+
+## Resultado final de validación local
+
+El candidato 1891cf7 fue validado en Cloud Shell: tests del helper 9/9, TypeScript completo, build Next.js 15.5.27 (11/11 páginas) y QA SQL 23/23 aprobados. git diff --check sin errores. Evidencia: /home/equantumg/equantum-finance-validacion.txt. La validación fue en un worktree separado, con la base equantum_restore_clean del contenedor equantum-staging.
+
+Esta evidencia reemplaza el estado pendiente de repetición indicado arriba. El E2E de la vista con datos y permisos reales sigue pendiente. El cambio se integra únicamente a relanzamiento-2026; no se cierran globalmente FIN001/FIN003/FIN008 ni Finanzas.
