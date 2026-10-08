@@ -876,3 +876,79 @@ La matriz por módulo está en `docs/relaunch/MODULE_COVERAGE_00_19_2026-10-08.m
 ### Clasificación del checkpoint M00
 
 **PARCIAL — documento rector consolidado; conformidad global pendiente de la validación de módulos propietarios y de aceptación formal.** No se avanza automáticamente a otro módulo.
+
+
+## Checkpoint M01 — Auditoría de Arquitectura y Seguridad — 2026-10-08
+
+**HEAD remoto de entrada:** `deac6bb0149bb008a523e085ae36505b20379849`; **main observado:** `c2b41570a5600a585c76ac77d798927e07549832`, sin modificación.  
+**M00:** permanece **PARCIAL**.
+
+Se leyó completo el Documento 01 (v1.2; 89 secciones) del ZIP rector y se
+cotejó con 00, 02, 11 y 12. También se revisaron la matriz de cobertura,
+el estado oficial, la clasificación de aceptación, el árbol remoto, el
+middleware, clientes Supabase, login/MFA, Portal, migraciones, tests y
+workflow de backup.
+
+### Resultado
+
+- **Implementado:** stack Next.js 15/TypeScript, Supabase Auth/PostgreSQL,
+  Vercel/GitHub; cliente SSR y navegador con clave publicable; middleware
+  con perfil/estado/cambio de contraseña; MFA AAL2 exigida a Master;
+  cabeceras de seguridad; RLS y pruebas locales.
+- **Evidencia local histórica reutilizada:** 22/22 migraciones, 28/28 SQL,
+  Node 9/9, TypeScript/build PASS y 11/11 páginas estáticas, según
+  CHECKPOINT 04D. No se repitieron en esta sesión.
+- **Brechas de implementación:** no se identificó flujo versionado de doble
+  control Master, expiración de capacidad Master tras 15 minutos inactivo,
+  audit log central e íntegro, step-up general, MFA obligatorio para otras
+  cuentas sensibles ni lista/cierre remoto de sesiones. Historial de Tasks
+  y Tickets no equivale al audit log central de DOC01.
+- **Brechas de ambiente/operación:** restore probado sobre PostgreSQL local;
+  no incluye Auth/Storage/Vault administrados. No se ejecutó Auth/Data API/
+  Storage con sesiones reales de staging, rollback final ni operación RPO/RTO.
+- **Otras capacidades transversales pendientes:** gobernanza/revocación de
+  integraciones, salud/alertas técnicas y controles generales de jobs no
+  están demostrados por los artefactos y pruebas revisados.
+- No se cambió código ni RLS: esos cambios de autorización y privilegio
+  requieren pruebas locales y staging que esta sesión no puede ejecutar.
+
+### Criterios formales existentes relacionados
+
+No se encontró un set separado de ACC propio de DOC01. Se conservaron IDs
+del registro DOC12; todos los citados permanecen formalmente `NO EJECUTADO`.
+
+| Criterio | Clasificación oficial | Evidencia relacionada y límite |
+|---|---|---|
+| ACC-SEC-001 | STAGING / bloqueante | Tests SQL de RLS existentes; falta matriz API/RPC con sesión real. |
+| ACC-SEC-002 | STAGING / bloqueante | Tests de permisos/RLS; falta prueba completa de manipulación frontend/API en staging. |
+| ACC-SEC-003 | STAGING / bloqueante | SQL y HTTP local del handler; no completa todas las APIs/sesiones reales. |
+| ACC-SEC-004 | STAGING / no bloqueante | Evidencia local de acceso financiero por alcance; falta ejecución formal en staging. |
+| ACC-SEC-005 | STAGING / bloqueante | Tests de permisos; falta comprobar todos los recursos y roles en staging. |
+| ACC-SEC-006 | STAGING / bloqueante | Portal/RLS local; falta cambio de membresía con sesión real y no mezcla entre empresas. |
+| ACC-SEC-007 | STAGING / bloqueante | Políticas de Tickets; falta E2E que demuestre ausencia de notas internas en API/payload. |
+| ACC-SEC-008 | STAGING / bloqueante | Storage A/B PostgreSQL local; falta servicio Auth/Storage administrado y URL firmada. |
+| ACC-SEC-009 | STAGING / bloqueante | No hay evidencia suficiente de audit log de acciones Master; función pendiente. |
+| ACC-SEC-010 | STAGING / bloqueante | Boundary de IA local; no certifica todo el filtrado por permisos. |
+| ACC-DATA-001 | STAGING / bloqueante | Storage privado A/B local; falta flujo Auth/Storage administrado. |
+| ACC-DATA-003 | BLOQUEADO POR FUNCIÓN PENDIENTE / bloqueante | Falta audit log de cambios sensibles. |
+| ACC-MIG-001, ACC-MIG-006 | STAGING / bloqueantes | Restore/reconciliación local no cierra ensayo ni rollback administrado. |
+
+Las clasificaciones son las del archivo rector; relacionar un test por
+comportamiento no cambia `NO EJECUTADO` a PASS.
+
+### Pruebas de esta sesión y límites
+
+- Inspección del documento rector y artefactos remotos: completada.
+- GitHub status del HEAD de entrada: Vercel `success`; no es E2E ni aprobación.
+- Regresión SQL: **NOT EXECUTED** en esta sesión.
+- `npm run build`: **NOT EXECUTED** en esta sesión.
+- Motivo: repositorio no está montado como checkout local; `git clone` no
+  pudo conectarse al proxy de red; no hay acceso al contenedor local.
+- Código, esquema, permisos, datos, producción y `main`: sin cambios.
+
+### Estado final
+
+**M01 = PARTIAL.** Arquitectura base y capas existentes están presentes,
+con evidencia local previa. Doble control/expiración Master, auditoría
+central, MFA por riesgo, sesiones remotas y aceptación en staging quedan
+pendientes. **M00 = PARTIAL.** No se inicia M02.

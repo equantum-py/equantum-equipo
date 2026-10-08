@@ -14,7 +14,7 @@ Es un inventario inicial para priorizar auditorías módulo por módulo, no una 
 | # | Documento / módulo | Cobertura inicial | Evidencia existente en el repositorio | Brecha principal registrada |
 |---:|---|---|---|---|
 | 00 | Visión y principios | **PARCIAL (transversal)**; documento rector definitivo | Este checkpoint; los módulos propietarios existentes y el Documento 12 | La visión completa depende de módulos aún pendientes y de aceptación formal; M00 no es una función aislada |
-| 01 | Arquitectura y seguridad | **PARCIAL** | Next.js/Supabase/Vercel, migraciones RLS, runners y evidencia de restore/QA local | Validación administrada de Supabase, rollback final, recuperación operativa y controles de arquitectura aún no cerrados integralmente |
+| 01 | Arquitectura y seguridad | **PARCIAL** | `docs/relaunch/M01_ARCHITECTURE_SECURITY_REVIEW_2026-10-08.md`; Auth/RLS/MFA Master y restore PostgreSQL local registrados | Doble control Master, expiración por inactividad, MFA para permisos sensibles, audit log central, revocación remota de sesiones, salud/alertas y validación formal/externa siguen abiertos |
 | 02 | Usuarios y permisos | **PARCIAL** | `app/admin/page.tsx`, políticas y pruebas SQL de permisos/RLS; estado de implementación | Ciclos de usuario, onboarding, alcance y administración sensible no están aceptados formalmente |
 | 03 | Tareas | **PARCIAL** | Migraciones y tests de permisos, historial, triage e integración con Tickets | Los criterios de espera/bloqueo y cierre de Proyecto siguen señalados con gaps en la matriz de aceptación |
 | 04 | Triage | **PARCIAL** | `20261007_triage_engine_v2.sql`, `golden_triage_v2.sql`, `tasks_triage_integration_v2.sql` | Situación multiobjeto, métricas/agrupación y override auditable no están demostrados como módulo completo |
@@ -46,3 +46,15 @@ Es un inventario inicial para priorizar auditorías módulo por módulo, no una 
 El Documento 00 está consolidado y su función es gobernar decisiones en los demás módulos. No corresponde agregarle una implementación duplicada. La conformidad del producto queda PARCIAL mientras existan módulos pendientes y criterios formales sin ejecución. El módulo 00 queda auditado documentalmente en esta pasada; la validación de su cumplimiento es transversal y debe apoyarse en los checkpoints propietarios, sin repetir regresiones ya registradas.
 
 **Siguiente acción:** esperar la indicación del usuario sobre cuál módulo auditar después. Este inventario no autoriza avanzar automáticamente.
+
+
+## Checkpoint M01 — Arquitectura y seguridad — 2026-10-08
+
+**HEAD de entrada:** `deac6bb0149bb008a523e085ae36505b20379849`; **main observado:** `c2b41570a5600a585c76ac77d798927e07549832`, sin cambios.  
+**Estado:** M01 **PARCIAL**. M00 permanece **PARCIAL**.
+
+Auditoría detallada: `docs/relaunch/M01_ARCHITECTURE_SECURITY_REVIEW_2026-10-08.md`.
+Los criterios DOC12 relacionados continúan `NO EJECUTADO`; no se cambió su
+clasificación ni se inventaron IDs. Este checkpoint fue documental: sin
+checkout local ni PostgreSQL/Docker en la sesión, no se ejecutaron nueva
+regresión ni build. No hubo cambios de código, esquema, permisos o datos.
