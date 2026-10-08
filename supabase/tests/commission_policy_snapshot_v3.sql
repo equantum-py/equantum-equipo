@@ -80,8 +80,15 @@ BEGIN
     THEN RAISE EXCEPTION 'FAIL: commission snapshot %, expected %',v_snapshot.commission_amount,v_case.amount;
     END IF;
 
-    UPDATE public.proposals SET commission_policy_id=current_setting('qa.commission.v2')::uuid
-    WHERE id=v_proposal;
+    -- La seleccion de una propuesta cerrada queda protegida; su snapshot se conserva.
+    IF v_case.policy_id IS DISTINCT FROM current_setting('qa.commission.v2')::uuid THEN
+      v_rejected:=false;
+      BEGIN
+        UPDATE public.proposals SET commission_policy_id=current_setting('qa.commission.v2')::uuid
+        WHERE id=v_proposal;
+      EXCEPTION WHEN SQLSTATE '55000' THEN v_rejected:=true; END;
+      IF NOT v_rejected THEN RAISE EXCEPTION 'FAIL: closed proposal reassignment allowed'; END IF;
+    END IF;
     v_retry := public.close_opportunity_won(v_opp,v_proposal);
     SELECT * INTO STRICT v_snapshot FROM public.sales WHERE id=v_sale;
     IF v_retry IS DISTINCT FROM v_sale
