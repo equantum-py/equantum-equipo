@@ -7,6 +7,7 @@ import {calculateCommercialFinanceSummary, type FinanceSale} from "@/lib/finance
 import {Banknote,FileText,Landmark,RefreshCw} from "lucide-react";
 
 const FinancialPolicies=dynamic(()=>import("./FinancialPolicies"));
+const CommercialWorkflow=dynamic(()=>import("./CommercialWorkflow"));
 
 type Invoice={
   id:string;
@@ -27,7 +28,7 @@ type Payment={
   currency:string;
   amount:number;
   payment_method:string|null;
-  paid_at:string;
+  paid_at:string|null;
   external_reference:string|null;
 };
 
@@ -73,6 +74,7 @@ export default function FinanceView({canManagePolicies=false}:{canManagePolicies
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [showPolicies,setShowPolicies]=useState(false);
+  const [showOperations,setShowOperations]=useState(false);
 
   async function load(){
     const current=++request.current;
@@ -103,7 +105,7 @@ export default function FinanceView({canManagePolicies=false}:{canManagePolicies
       ]);
       if(current!==request.current) return;
       setInvoices(a.sort((x,y)=>(y.issued_at||"").localeCompare(x.issued_at||"")));
-      setPayments(b.sort((x,y)=>y.paid_at.localeCompare(x.paid_at)));
+      setPayments(b.sort((x,y)=>(y.paid_at||"").localeCompare(x.paid_at||"")));
       setBank(c.sort((x,y)=>y.occurred_at.localeCompare(x.occurred_at)));
       setSales(d);
     }catch{
@@ -150,11 +152,16 @@ export default function FinanceView({canManagePolicies=false}:{canManagePolicies
     </div>
 
     {canManagePolicies&&<div className="mb-5">
+      <button type="button" aria-expanded={showOperations} onClick={()=>setShowOperations(x=>!x)}
+        className="mr-3 mb-3 rounded-xl bg-[#044474] px-4 py-3 text-sm font-medium text-white">
+        {showOperations?"Ocultar operaciones":"Propuesta, venta, factura y cobro"}
+      </button>
       <button type="button" aria-expanded={showPolicies} onClick={()=>setShowPolicies(x=>!x)}
         className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-[#044474]">
         {showPolicies?"Ocultar políticas y aprobaciones":"Políticas y aprobaciones"}
       </button>
       {showPolicies&&<FinancialPolicies/>}
+      {showOperations&&<CommercialWorkflow onChange={load}/>}
     </div>}
 
     {error&&
@@ -218,7 +225,7 @@ export default function FinanceView({canManagePolicies=false}:{canManagePolicies
                   {x.payment_method||"Cobro"}
                 </b>
                 <p className="mt-1 text-xs text-slate-400">
-                  {new Date(x.paid_at).toLocaleDateString("es-PY")}
+                  {x.paid_at?new Date(x.paid_at).toLocaleDateString("es-PY"):"Sin fecha registrada"}
                   {x.external_reference?" · "+x.external_reference:""}
                 </p>
               </div>

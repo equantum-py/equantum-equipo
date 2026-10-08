@@ -5,7 +5,7 @@ import {createClient} from "@/lib/supabase/client";
 
 type FiscalPolicy={id:string;policy_code:string;version:number;classification:string;rate_percent:number;basis_reference:string};
 type CommissionPolicy={id:string;policy_code:string;version:number;rate_percent:number};
-type Proposal={id:string;version:number;currency:string|null;status:string};
+type Proposal={id:string;version:number;currency:string|null;status:string;commission_policy_id:string|null};
 type Item={id:string;proposal_id:string;description:string;quantity:number;unit_price:number;discount_amount:number;tax_amount:number;line_total:number;fiscal_approval_id:string|null};
 const classificationLabel:Record<string,string>={taxable:"Gravado",export_zero:"Exportación a tasa cero",exempt:"Exento"};
 
@@ -32,6 +32,7 @@ export default function FinancialPolicies(){
   const [error,setError]=useState(""),[notice,setNotice]=useState("");
   const [classification,setClassification]=useState("taxable");
   const [proposalId,setProposalId]=useState(""),[itemId,setItemId]=useState("");
+  const [commissionProposal,setCommissionProposal]=useState(""),[commissionPolicy,setCommissionPolicy]=useState("");
 
   async function authorizedActor(){
     const {data:{user},error:authError}=await sb.auth.getUser();
@@ -54,7 +55,7 @@ export default function FinancialPolicies(){
       const [a,b,c,d]=await Promise.all([
         allRows<FiscalPolicy>(sb.from("fiscal_policy_versions").select("id,policy_code,version,classification,rate_percent,basis_reference").order("id")),
         allRows<CommissionPolicy>(sb.from("commission_policy_versions").select("id,policy_code,version,rate_percent").order("id")),
-        allRows<Proposal>(sb.from("proposals").select("id,version,currency,status").order("id")),
+        allRows<Proposal>(sb.from("proposals").select("id,version,currency,status,commission_policy_id").order("id")),
         allRows<Item>(sb.from("proposal_items").select("id,proposal_id,description,quantity,unit_price,discount_amount,tax_amount,line_total,fiscal_approval_id").order("id"))
       ]);
       if(!mounted.current||current!==generation.current) return;
@@ -75,7 +76,7 @@ export default function FinancialPolicies(){
     return ()=>{mounted.current=false;generation.current++};
   },[]);
 
-  async function save(event:FormEvent<HTMLFormElement>,kind:"fiscal"|"commission"|"approval"){
+  async function save(event:FormEvent<HTMLFormElement>,kind:"fiscal"|"commission"|"approval"|"assignment"){
     event.preventDefault();
     if(writing.current||loading||!actor) return;
     const form=event.currentTarget,fields=new FormData(form);
@@ -85,7 +86,13 @@ export default function FinancialPolicies(){
       const uid=await authorizedActor();
       if(uid!==actor) throw new Error("La sesión cambió. Actualizá la configuración antes de guardar.");
       const value=(name:string)=>String(fields.get(name)||"").trim();
-      if(kind==="approval"){
+      if(kind==="assignment"){
+        const result=await sb.rpc("assign_proposal_commission_v3",{
+          p_proposal_id:value("proposal_id"),p_policy_id:value("policy_id")||null
+        });
+        if(result.error) throw result.error;
+        if(result.data!==value("proposal_id")) throw new Error("No se confirmó la asignación de comisión.");
+      }else if(kind==="approval"){
         const result=await sb.rpc("approve_proposal_item_fiscal_v3",{
           p_item_id:value("item_id"),p_policy_id:value("policy_id"),
           p_justification:value("justification"),p_evidence_reference:value("evidence_reference")
@@ -103,16 +110,18 @@ export default function FinancialPolicies(){
       }
       saved=true;
       if(!mounted.current) return;
-      form.reset();
+      if(kind!=="assignment") form.reset();
       if(kind==="fiscal") setClassification("taxable");
       if(kind==="approval") setItemId("");
-      setNotice(kind==="approval"?"Aprobación fiscal registrada. Importes de la propuesta recalculados.":"Versión creada. Las versiones anteriores se conservan.");
+      setNotice(kind==="assignment"?"Selección de comisión guardada para la propuesta."
+        :kind==="approval"?"Aprobación fiscal registrada. Importes de la propuesta recalculados.":"Versión creada. Las versiones anteriores se conservan.");
       await load();
     }catch(e){
       if(!mounted.current) return;
       const code=(e as {code?:string})?.code;
       setError(code==="23505"?"Ese código y versión ya existen. Elegí una nueva versión."
         :code==="42501"?"Tu cuenta no tiene permiso para realizar esta operación."
+        :code==="55000"?"La propuesta ya está cerrada. Su comisión histórica se conserva."
         :saved?"El cambio se guardó, pero no se pudo actualizar la pantalla. Actualizá antes de repetirlo."
         :e instanceof Error?e.message:"No se pudo guardar el cambio. Revisá los datos y tus permisos.");
     }finally{
@@ -157,6 +166,21 @@ export default function FinancialPolicies(){
           <PolicyList rows={commission.map(p=>`${p.policy_code} · v${p.version} · ${p.rate_percent}%`)}/>
         </Panel>
       </div>
+      <Panel title="Asignar comisión a una propuesta">
+        <form onSubmit={e=>save(e,"assignment")}><fieldset disabled={locked} className="space-y-3">
+          <Field label="Propuesta"><select required name="proposal_id" value={commissionProposal} className="inputV3"
+            onChange={e=>{setCommissionProposal(e.target.value);setCommissionPolicy(proposals.find(p=>p.id===e.target.value)?.commission_policy_id||"")}}>
+            <option value="">Seleccionar propuesta</option>
+            {proposals.filter(p=>!['accepted','rejected'].includes(p.status)).map(p=><option key={p.id} value={p.id}>{p.id} · v{p.version} · {p.currency||"Sin moneda"} · {p.status}</option>)}
+          </select></Field>
+          <Field label="Versión de comisión"><select name="policy_id" value={commissionPolicy} onChange={e=>setCommissionPolicy(e.target.value)} className="inputV3">
+            <option value="">Sin comisión configurada</option>
+            {commission.map(p=><option key={p.id} value={p.id}>{p.policy_code} · v{p.version} · {p.rate_percent}%</option>)}
+          </select></Field>
+          <p className="text-xs text-slate-500">La versión elegida se conserva al cerrar la venta. Sin configuración, no se calcula un porcentaje de comisión.</p>
+          <button disabled={!commissionProposal} className="rounded-xl bg-[#044474] px-4 py-3 text-sm text-white disabled:opacity-50">{busy?"Guardando…":"Guardar selección de comisión"}</button>
+        </fieldset></form>
+      </Panel>
       <Panel title="Aprobar tratamiento fiscal de una partida">
         <form onSubmit={e=>save(e,"approval")}><fieldset disabled={locked} className="space-y-3">
           <Field label="Propuesta"><select required value={proposalId} onChange={e=>{setProposalId(e.target.value);setItemId("")}} className="inputV3">
