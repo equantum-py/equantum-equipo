@@ -1,17 +1,23 @@
-# Política fiscal gobernada — candidato local
+# Política fiscal gobernada — validación local aprobada
 
-Base: e397eac (restaura ejecutabilidad del runner). SQL preparatorio: scripts/relaunch/sql/fiscal_policy_governance_v3.sql. No aplicado a producción.
+Migración real generada por CLI: supabase/migrations/20261008024203_fiscal_policy_governance_v3.sql. Base: e397eac.
 
-Políticas: código/versión inmutables, clasificación y tasa explícitas, referencia de fundamento y autor. Clasificaciones de ingeniería: taxable, export_zero, exempt. Las configuraciones se introducen por Master activo; no hay tasas ni políticas productivas precargadas. Las referencias guardadas no constituyen por sí mismas verificación legal del tratamiento.
+Políticas versionadas e inmutables: código, clasificación, tasa explícita, referencia de fundamento y autor. Master activo las crea; Master con financial_info aprueba por Proposal Item mediante approve_proposal_item_fiscal_v3, con motivo y evidencia. Backend valida y estampa base/moneda/autor/hora, aplica la tasa y actualiza totales de Proposal. No infiere impuesto por moneda ni usa IA. Referencias registradas no constituyen validación legal automática.
 
-Aprobación: Master activo con financial_info usa approve_proposal_item_fiscal_v3 para indicar política, motivo y referencia de evidencia por Proposal Item. La base/currency/autor/hora se calculan y estampan en backend. El RPC actualiza el Item y los totales de Proposal. La moneda no decide impuesto. La política aprobada calcula el impuesto sobre quantity*unit_price menos descuento; export_zero/exempt requieren tasa cero. Cambios de base/currency requieren una nueva versión de propuesta/decisión compatible.
+Histórico: Sale Items conservan aprobación, código/versión/tasa y autor/hora/evidencia. Se comprueba que el cierre copia importes aprobados y se bloquea modificación del snapshot. Nuevas políticas/aprobaciones no recalculan ventas anteriores. Items legacy sin aprobación mantienen el comportamiento explícito previo.
 
-Histórico: Sale Items guardan decisión, código/versión/tasa, aprobador/hora/evidencia. Trigger valida que los importes copiados concuerden con la decisión y bloquea modificaciones del snapshot. Nuevas versiones de política no recalculan ventas anteriores. Items legacy sin aprobación conservan tratamiento explícito previo, sin inventar aprobaciones ni certificar su validez fiscal.
+Seguridad: nuevas tablas con RLS; Master crea/aprueba, Master o financial_info leen; funciones SECURITY INVOKER. Grants de columnas y políticas UPDATE Master con financial_info habilitan el RPC sin ampliar permisos al actor restringido. Políticas existentes conservadas; revisión final de advisors/grants y E2E pendientes.
 
-Seguridad: tablas nuevas con RLS, creación de políticas/aprobaciones limitada a Master, lectura a Master o financial_info, funciones SECURITY INVOKER. Se agregan políticas UPDATE restringidas a Master con financial_info en proposals/proposal_items y grants de columnas para el RPC. Las políticas existentes se conservan; los grants restaurados/administrados y la revisión final de advisors deben verificarse antes de release.
+## Evidencia
 
-Tests preparados: Master autenticado crea políticas y aprueba cuatro escenarios PYG gravada, USD gravada, USD export_zero y USD exempt; rechaza export con tasa no cero y motivo vacío; importa original inconsistente reemplazado por cálculo; totales de propuesta, cierre real, evidencia de snapshot, protección de base/histórico, nueva política y actor restringido. ROLLBACK comprueba cero fixtures. Tasas 10/15 son únicamente fixtures de ingeniería, no tasas legales configuradas.
+Candidato 6500d81. Archivo /home/equantumg/equantum-fiscal-governance-validacion.txt.
 
-Validación pendiente: SQL, baseline restore, 21 migraciones y 26 tests. validate-fiscal-local.py genera migración con CLI, ensaya sobre una base nueva equantum_fiscal_rehearsal desde baseline (Vault excluido), y solo después de aprobar actualiza equantum_restore_clean y ejecuta allí el test fiscal. No hace commit/push/merge/despliegue; no sobrescribe bases existentes.
+Restore nuevo equantum_fiscal_rehearsal: baseline 11 tablas reconciliado, 21/21 migraciones y 26/26 tests aprobados. Vault excluido con lista del restore validado. Luego se aplicó solo la nueva migración a equantum_restore_clean y se repitió allí el test fiscal, aprobado.
 
-Pendientes de producto: UI, E2E, configuración/aprobación operativa con referencias reales, seguridad final/advisors y rollback de release. No se marca PASS FIN005 ni el conjunto de Finanzas antes de ejecutar y evaluar alcance.
+Tests: Master autenticado aprueba cuatro escenarios PYG gravada, USD gravada, USD export_zero y USD exempt; se prueban cálculo/totales/snapshot, rechazo de configuración inválida/motivo vacío, integridad de base e histórico, nueva política y actor restringido. ROLLBACK verifica cero fixtures. Tasas 10/15 son fixtures de ingeniería; no tasas legales configuradas.
+
+El SQL preparatorio y el instalador de una sola ejecución se retiran tras generar/probar la migración real. Runner mantiene permiso 100755 e incluye su nombre.
+
+## Pendientes
+
+UI, E2E, configuración/aprobación operativa con referencias reales, advisors/seguridad final y rollback de release. No se certifica Finanzas completo ni producción. Main y producción sin cambios.

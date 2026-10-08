@@ -141,7 +141,7 @@ Main: NO MODIFICAR
 | Invoice separada de Payment | PASS | PostgreSQL local: golden_financial_v2 y financial_functions_e2e_v2 |
 | Caja / movimientos | PARTIAL | Movimientos y conciliacion sin duplicar cobro probados localmente; falta validar alcance integral |
 | Multimoneda gobernada | PARTIAL | Separacion de monedas y rechazo de Payment incompatible probados; conversion y gobierno pendientes de evidencia |
-| Tratamiento fiscal | PENDING | Falta implementación |
+| Tratamiento fiscal | PASS | Backend local: políticas/versiones explícitas, aprobación Master y snapshot; UI/E2E y configuración operativa pendientes |
 | Comisión excluye IVA | PASS | Backend PostgreSQL local: base 10M, IVA 1M, tasa 5%, comisión 500000; commission_policy_snapshot_v3 |
 | Historial de política de comisión | PASS | Backend PostgreSQL local: snapshot de versión/tasa, cambio 5% a 7% conserva venta anterior; UI/E2E pendientes |
 | Golden financiero exacto | PASS | golden_financial_v2 ejecutado dentro del QA 21/21; alcance SQL local, no certifica todo Documento 19 |
@@ -614,3 +614,26 @@ Evidencia de restore nuevo: /home/equantumg/equantum-commission-rehearsal.txt; e
 - Sintaxis Python del instalador y bash -n/diff --check inicial: sin errores.
 
 Alcance: backend y RLS PostgreSQL local. No se aplicaron políticas de negocio productivas ni se modificó main/producción. UI para crear/elegir políticas, E2E, revisión final de seguridad/advisors y configuración operativa/fiscal permanecen pendientes. No certifica todos los criterios ni rollback final de release.
+
+## Checkpoint 09 — Política fiscal gobernada
+
+Ejecución: 2026-10-07 America/Asuncion (2026-10-08 UTC).
+Candidato: 6500d81691e247072fe38bce3ab83ea5232ec5fc.
+Migración generada por CLI: 20261008024203_fiscal_policy_governance_v3.sql.
+Evidencia local: /home/equantumg/equantum-fiscal-governance-validacion.txt.
+
+- Restore nuevo equantum_fiscal_rehearsal desde staging-baseline.dump, con lista validada y Vault excluido explícitamente; baseline 11 tablas reconciliado.
+- Runner: ATTEMPTED=21 PASS=21 FAIL=0 TOTAL=21.
+- SQL QA completo desde restore: 26/26 PASS.
+- Después del ensayo aprobado, migración aplicada también a equantum_restore_clean y nuevo test fiscal aprobado allí.
+- Master autenticado crea políticas/aprueba por Item con motivo y referencia de evidencia; cálculo backend actualiza Item y totales de Proposal.
+- PYG/USD gravadas y USD export_zero/exempt verificadas con fixtures explícitos. La moneda no decide impuesto.
+- Versión/tasa/aprobador/hora/evidencia guardados en Sale Items. Nuevas decisiones no recalculan ventas históricas.
+- Política inválida, motivo vacío, cambio de base sin aprobación compatible y edición de histórico rechazados. Usuario restringido no lee/aprueba.
+- Nuevas tablas RLS y funciones SECURITY INVOKER comprobadas por test.
+- Fixtures y grants de prueba revertidos mediante ROLLBACK; cero residuos.
+- Python/bash syntax y git diff --check del candidato: sin errores.
+
+Alcance: backend y RLS PostgreSQL local, con fixtures de ingeniería. Las referencias almacenadas no certifican validez legal; no se precargaron tasas productivas, no se usó IA para clasificación y no se inventaron aprobaciones de datos legacy. UI/E2E, aprobación/configuración operativa real, revisión final de seguridad/advisors y rollback de release siguen pendientes.
+
+Se integra únicamente a relanzamiento-2026. Main y producción sin cambios.
