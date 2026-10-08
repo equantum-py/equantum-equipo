@@ -9,7 +9,7 @@ Estado M01: **PARTIAL** · Estado M00: **PARTIAL**
 ## Fuentes examinadas
 
 Documento 01 completo (89 secciones) extraído de
-`DOCUMENTOS_RECTORES(4).zip), fundamentos transversales 00, 02, 11 y 12,
+`DOCUMENTOS_RECTORES(4).zip`, fundamentos transversales 00, 02, 11 y 12,
 estado oficial, matriz 00–19, matriz final de aceptación, árbol remoto y
 fuentes actuales de middleware, Auth/MFA, Portal, Supabase, migraciones,
 tests y workflow de backup.
@@ -21,7 +21,7 @@ de DOC12; no se inventaron IDs.
 
 | Requisito DOC01 | Estado | Evidencia / brecha |
 |---|---|---|
-| Stack vigente y modularidad | PASS de inventario | Next.js 15/TS, Supabase/Postgres, Vercel y GitHub; no se propone reemplazo. |
+| Stack vigente y modularidad | PARTIAL | Next.js 15/TS, Supabase/Postgres, Vercel y GitHub; no se propone reemplazo. |
 | Defensa en capas y autorización server-side | PARTIAL | Auth/middleware/RLS presentes; falta prueba formal API/DB con sesiones administradas. |
 | Identidad Portal separada | PARTIAL | `client_portal_users`, `is_internal_user()`, RLS de Portal/Storage y A/B local; E2E Auth/Data API/Storage pendiente. |
 | MFA por riesgo | PARTIAL | AAL2 exigida a Master; no se exige a las demás cuentas sensibles de DOC01. |
