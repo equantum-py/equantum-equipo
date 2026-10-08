@@ -22,6 +22,7 @@ MIGRATIONS=(
   "20261007_tasks_security_history_v2.sql"
   "20261007_rls_model_v2.sql"
   "20261007_security_portal_rls_v3.sql"
+  "20261008013538_release_guards_v3.sql"
 )
 
 PASS=0
@@ -45,9 +46,11 @@ for name in "${MIGRATIONS[@]}"; do
     echo "FAIL | $name"
     cat /tmp/equantum-migration.err
     FAIL=$((FAIL+1))
+    break
   fi
 done
 
+echo "ATTEMPTED=$((PASS+FAIL))"
 echo "PASS=$PASS"
 echo "FAIL=$FAIL"
 echo "TOTAL=${#MIGRATIONS[@]}"

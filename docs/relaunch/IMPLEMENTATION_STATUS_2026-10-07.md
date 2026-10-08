@@ -532,3 +532,26 @@ Alcance: comportamiento del backend PostgreSQL local como postgres.
 No certifica permisos de usuarios, E2E visual ni resistencia a
 modificaciones directas de columnas derivadas mediante UPDATE.
 No equivale a 361/361 criterios ni 40/40 casos de integracion.
+
+## Checkpoint 07 — Correcciones agrupadas de release
+
+Base: equantum_restore_clean; contenedor: equantum-staging.
+No se aplicaron cambios a produccion ni a equantum_staging.
+
+- Migracion nueva: supabase/migrations/20261008013538_release_guards_v3.sql.
+- Triage: UPDATE directo de columnas derivadas vuelve a calcular desde factores.
+- Idempotencia Payment: rechaza reutilizar referencia con factura/importe/metodo distintos.
+- Panel: solo cobros confirmados; pendientes por factura; excluye borradores/anuladas del facturado.
+- RLS financiero: fixtures no vacios y SET LOCAL ROLE authenticated; permitido/restringido/restringido.
+- Tests del resumen financiero: cuatro casos PASS.
+- Suite SQL: 23/23 PASS, FAIL=0.
+- TypeScript y build de Next.js: codigo 0.
+- Runner de migraciones: detiene la secuencia ante el primer fallo.
+- Registros originales recuperados: 361 criterios y 40 casos; matrices de trabajo separadas.
+
+Esta evidencia no certifica todas las APIs, funciones Edge, Auth/Storage remoto,
+Preview, E2E, impuestos/comisiones ni los modulos 13-19 completos.
+El test financiero anterior consultaba como postgres sin fixtures y no certificaba
+RLS positivo/negativo. Fue reemplazado por prueba con rol real y datos presentes.
+Los criterios formales no se marcaron PASS automaticamente.
+Produccion permanece BLOQUEADA.

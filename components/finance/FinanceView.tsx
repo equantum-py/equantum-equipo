@@ -2,6 +2,7 @@
 
 import {useEffect,useMemo,useState} from "react";
 import {createClient} from "@/lib/supabase/client";
+import {calculateFinanceSummary} from "@/lib/finance/summary";
 import {Banknote,FileText,Landmark,RefreshCw} from "lucide-react";
 
 type Invoice={
@@ -16,6 +17,7 @@ type Invoice={
 };
 
 type Payment={
+  status:string;
   id:string;
   invoice_id:string;
   currency:string;
@@ -93,15 +95,8 @@ export default function FinanceView(){
 
   useEffect(()=>{load()},[]);
 
-  const pygInvoices=invoices
-    .filter(x=>x.currency==="PYG"&&x.status!=="void")
-    .reduce((n,x)=>n+Number(x.total_amount||0),0);
-
-  const pygCollected=payments
-    .filter(x=>x.currency==="PYG")
-    .reduce((n,x)=>n+Number(x.amount||0),0);
-
-  const pygPending=Math.max(0,pygInvoices-pygCollected);
+  const {billed:pygInvoices,collected:pygCollected,pending:pygPending}=
+    calculateFinanceSummary(invoices,payments,"PYG");
 
   return <>
     <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -137,17 +132,17 @@ export default function FinanceView(){
       <Metric
         icon={<FileText size={18}/>}
         label="Facturado · PYG"
-        value={money(pygInvoices,"PYG")}
+        value={loading||error?"—":money(pygInvoices,"PYG")}
       />
       <Metric
         icon={<Banknote size={18}/>}
         label="Cobrado · PYG"
-        value={money(pygCollected,"PYG")}
+        value={loading||error?"—":money(pygCollected,"PYG")}
       />
       <Metric
         icon={<Landmark size={18}/>}
         label="Pendiente de cobro · PYG"
-        value={money(pygPending,"PYG")}
+        value={loading||error?"—":money(pygPending,"PYG")}
       />
     </div>
 

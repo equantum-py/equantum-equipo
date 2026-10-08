@@ -125,6 +125,26 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'PASS: edicion ajena conserva Triage';
+
+  PERFORM set_config('request.jwt.claim.sub',v_actor::text,true);
+  PERFORM set_config('request.jwt.claims',json_build_object('sub',v_actor,'role','authenticated')::text,true);
+  PERFORM set_config('request.jwt.claim.role','authenticated',true);
+  EXECUTE 'GRANT USAGE ON SCHEMA auth, public TO authenticated';
+  EXECUTE 'GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated';
+  EXECUTE 'GRANT SELECT, UPDATE ON public.tasks TO authenticated';
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.tasks SET triage_score=100,priority='critical',triage_reasons=ARRAY['Manipulado']
+  WHERE id=v_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FAIL: test actor could not update own fixture'; END IF;
+  SELECT * INTO STRICT v_task FROM public.tasks WHERE id=v_id;
+  IF v_task.triage_score IS DISTINCT FROM 23
+     OR v_task.priority::text IS DISTINCT FROM 'low'
+     OR v_task.triage_reasons IS DISTINCT FROM ARRAY[]::text[] THEN
+    RAISE EXCEPTION 'FAIL: authenticated changed derived Triage';
+  END IF;
+  EXECUTE 'RESET ROLE';
+  RAISE NOTICE 'PASS: authenticated cannot forge derived Triage';
+
 END $$;
 
 ROLLBACK;
