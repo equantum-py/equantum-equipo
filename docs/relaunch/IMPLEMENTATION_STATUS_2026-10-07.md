@@ -1252,3 +1252,10 @@ este seguimiento. Esta confirmación posterior reemplaza el estado histórico
 “respaldo pendiente” registrado en la nota del 2026-10-08. P1 y M03–M05
 continúan **PARCIALES** hasta validar la migración y sus pruebas en PostgreSQL
 aislado con baseline autorizado.
+
+### Automatización de validación de aplicación P1 — 2026-10-09
+
+- Se añade un workflow de GitHub Actions para Pull Requests dirigidas a `relanzamiento-2026` (apertura, actualización o reapertura), solo desde ramas del mismo repositorio.
+- Usa `ubuntu-latest`, Node 24 y `npm run validate:p1:app-local`, con permiso `contents: read`. No incluye despliegues, secretos de Supabase, SQL ni conexión a bases remotas.
+- El resultado del runner de GitHub queda pendiente de la primera ejecución en la PR. Las pruebas locales previas no sustituyen esa ejecución ni la aceptación formal de P1.
+- `package-lock.json` no está presente; npm instala las versiones permitidas por `package.json`, por lo que puede haber variación de dependencias entre ejecuciones.
