@@ -26,6 +26,8 @@ MIGRATIONS=(
   "20261008021415_commission_policies_v3.sql"
   "20261008024203_fiscal_policy_governance_v3.sql"
   "20261008031852_commercial_flow_v3.sql"
+  "20261008120000_tasks_radar_workflow_v3.sql"
+  "20261008143000_p1_task_write_scope_archive_radar_v1.sql"
 )
 
 run_migrations() {

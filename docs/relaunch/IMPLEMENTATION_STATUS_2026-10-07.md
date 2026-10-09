@@ -1009,3 +1009,205 @@ sus fuentes, permisos y reconciliación.
 El plan es una propuesta de secuencia, no autorización de implementación,
 exclusión ni producción. M00 y los módulos incompletos permanecen parciales;
 la ejecución formal de aceptación sigue pendiente.
+
+## FASE 1 — M03 Tareas / M04 Triage / M05 Radar — avance funcional
+
+Fecha: 2026-10-08. Rama: `relanzamiento-2026`.
+
+### Cambios implementados en el checkout
+
+- La creación de tareas se redujo a captura inicial breve; responsable,
+  objetivo interno y compromiso externo se muestran por separado.
+- La transición de estado se mueve a una operación SQL transaccional. Solo
+  acepta los seis estados rectores, valida las transiciones, exige motivo al
+  cancelar/reabrir, contexto y revisión/condición al esperar, y causa al
+  bloquear. Conserva el cambio en `task_status_history`.
+- Entrar en ESPERANDO crea o actualiza un único `followup` pendiente en la
+  misma transacción; el trigger conserva la condición en Radar y reutiliza
+  un asunto activo equivalente. No se convierte una espera en bloqueo por
+  el paso del tiempo.
+- La interfaz muestra causas registradas por Triage, espera/bloqueo, objetivo
+  interno/compromiso externo, y filtros por estado. La reasignación queda
+  condicionada a permisos existentes; la eliminación sigue reservada a
+  quienes ya tienen `delete_tasks` y requiere confirmación.
+- Radar diferencia revisión vencida, continuidad sin protección suficiente,
+  seguimiento programado y cierre; confirmar el cierre requiere confirmación
+  explícita. La prioridad permanece en Triage.
+
+Archivos principales:
+`app/dashboard/page.tsx`,
+`lib/operations/task-triage-radar.ts`,
+`supabase/migrations/20261008120000_tasks_radar_workflow_v3.sql`,
+`supabase/tests/tasks_radar_workflow_v3.sql`,
+`scripts/relaunch/task-triage-radar.test.cjs`,
+`scripts/relaunch/migrate-v2-order.sh` y `package.json`.
+
+### Verificación de esta ejecución
+
+- Prueba Node de reglas de estado, presentación de categorías humanas,
+  salud de Radar y contexto requerido: **4/4 PASS**.
+- Suite Node `npm run test:operations`: **PASS**; reglas operativas 4/4 y
+  suite financiera 1/1.
+- TypeScript `npx --no-install tsc --noEmit`: **PASS** en el checkout final
+  de esta ejecución.
+- `npm run build`: compila y valida TypeScript, pero falla durante la
+  generación estática con `Next.js build worker exited with code: 1` sin
+  diagnóstico del worker. Se reprodujo el mismo fallo en un worktree limpio
+  del commit base `5e07f36`; por tanto, el fallo no se atribuye a estos
+  cambios y el build final queda **BLOCKED por el worker/runtime actual**.
+- PostgreSQL/`psql` y el contenedor local no están disponibles en esta
+  sesión. La migración, `tasks_radar_workflow_v3.sql` y la regresión SQL
+  completa quedan **NO EJECUTADAS** aquí. Los 28/28 anteriores son evidencia
+  histórica, no resultado de esta ejecución.
+- La prueba SQL usa ahora `SET LOCAL ROLE authenticated` para ejercer el RPC
+  y el RLS de la tarea fixture, conserva compatibilidad con el estado legado
+  `waiting_client`, y revierte tanto grants mínimos de Auth como fixtures con
+  `ROLLBACK`; su ejecución sigue pendiente por falta de PostgreSQL.
+- No se ejecutó E2E autenticado en Supabase administrado ni Vercel.
+
+### Estado de criterios y brechas
+
+- `ACC-TASK-002`, `003` y `004`: hay implementación y prueba SQL
+  versionada para ejecutar; aceptación formal **NO EJECUTADA** hasta aplicar
+  y probar la migración en PostgreSQL local.
+- `ACC-TASK-001`, `005`, `006` y `007`: conservan su evidencia anterior;
+  no se reejecutaron en esta sesión. `ACC-TASK-008` sigue sin bloqueo de
+  cierre de Proyecto en la interfaz/operación integral.
+- Triage conserva el motor determinístico existente y ahora muestra sus
+  razones en la vista. Agrupación de situaciones, conteo sin doble conteo,
+  overrides auditables y señales amplias de Ticket/Proyecto permanecen
+  pendientes; no se inventó una fórmula nueva.
+- Radar mejora el ciclo temporal de tarea en espera. Notificaciones,
+  escalamiento, revisión/eventos ejecutados sin navegador, cobertura de
+  ausencias, zombies, capacidad y seguimiento de Tickets siguen pendientes.
+- `ACC-TRI-001`, `002`, `004`, `006` y `ACC-RAD-003–006` no se declaran
+  aceptados. `ACC-TRI-003`, `ACC-TRI-005` y `ACC-RAD-007` requieren volver a
+  ejecutar sus pruebas pertinentes en un entorno con PostgreSQL; los
+  controles existentes no se cambiaron intencionalmente.
+
+### Resultado de fase
+
+**FASE 1 = PARCIAL.** Se implementó un recorrido real y transaccional para
+espera/bloqueo/reapertura y su enlace con Radar, además de mejoras de
+explicabilidad y presentación. La migración aún necesita regresión SQL
+ejecutada, y siguen abiertas capacidades rectoras de situaciones Triage,
+Proyecto, notificación y seguimiento avanzado Radar. No se hizo commit,
+push, merge ni despliegue en este avance.
+
+### Revalidación del entorno y evidencia — 2026-10-08
+
+Esta revalidación corresponde al checkout local `relanzamiento-2026`, HEAD
+`5e07f36ea5e2b8c6218c64e59a4e74c4a76bccd4`. El árbol de trabajo ya contenía
+cambios de Fase 1; se conservaron sin reset ni descarte.
+
+- `npm run test:operations`: PASS (reglas Tareas/Triage/Radar 4/4 y resumen
+  financiero Node 1/1).
+- `npx --no-install tsc --noEmit`: PASS.
+- `bash -n scripts/relaunch/migrate-v2-order.sh scripts/relaunch/qa-sql.sh`
+  y `git diff --check`: PASS.
+- `npm run build` sin variables públicas de Supabase falla durante la
+  generación de páginas estáticas. La inicialización directa del cliente
+  `@supabase/ssr` sin URL/clave reproduce el error explícito de configuración
+  requerida. Con valores públicos ficticios, efímeros y pasados solo al
+  proceso de build, `npm run build` terminó PASS y generó 11/11 páginas.
+  Ese build verifica compilación/prerender, no conectividad ni E2E de Supabase.
+- PostgreSQL 17.11 nativo responde por TCP local. No se encontró dump/backup
+  baseline en las ubicaciones accesibles y la base `equantum_restore_clean`
+  no existe. No se creó un esquema sustituto. Por ello no se aplicó la
+  migración nueva ni se ejecutó su SQL de aceptación o la regresión SQL.
+- Los 28/28 SQL de la evidencia anterior son históricos. La migración
+  `20261008120000_tasks_radar_workflow_v3.sql` y el test
+  `tasks_radar_workflow_v3.sql` están versionados en el árbol local, pero su
+  validez funcional no está demostrada por PostgreSQL en esta ejecución.
+- La rama remota consultada anteriormente apuntaba a
+  `02eabdc195e60f8c2c6133af942d193c9c1cbb19`, con el mismo árbol Git que este
+  checkout; el commit local `5e07f36` tiene metadatos de commit distintos.
+  En esta revalidación no fue posible refrescar la referencia por Git CLI
+  debido al proxy `browser-proxy:8889`; no se hizo push ni se alteró historia.
+
+**Resultado actualizado: FASE 1 = PARCIAL.** Node, TypeScript y el build con
+configuración pública no conectada pasan. La validación integrada de
+PostgreSQL está **BLOQUEADA por falta del dump baseline aprobado**, no por una
+falla observada de la migración. No se declara aceptación formal, E2E
+administrado ni publicación de esta funcionalidad como validada.
+
+### P1 — decisiones aprobadas D1/D2/D4/D6 — ejecución actual 2026-10-08
+
+Se implementó el contrato acordado: salir de ESPERANDO conserva el seguimiento
+si no se verificó la dependencia; con evidencia, cierra solo esa continuidad y
+Radar promueve otro compromiso pendiente o cierra cuando no queda obligación.
+COMPLETADA no pasa a CANCELADA; ambas pueden reabrirse a POR HACER con motivo e
+historial. El RPC comprueba asignación/permisos explícitos en base de datos,
+bloquea cambios directos de estado —incluido el intento de falsificar sus GUC—,
+usa bloqueo de fila y estado esperado para rechazar escrituras obsoletas sin
+efectos parciales. Se conserva la fórmula de Triage existente.
+
+Ejecución comprobada en este checkout:
+
+- `npm run test:operations`: PASS, 4/4 pruebas operativas y 1/1 prueba de
+  resumen financiero Node.
+- `npx --no-install tsc --noEmit`: PASS.
+- `npm run build` con valores públicos ficticios y efímeros bajo
+  `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: PASS,
+  11/11 páginas generadas; no valida conectividad ni Auth/Supabase.
+- `bash -n` de ambos runners y `git diff --check`: PASS.
+- Los 59 escenarios P1 permanecen `PREPARADO — NO EJECUTADO`. La prueba SQL
+  versionada cubre sus casos transaccionales, pero no pudo ejecutarse: no hay
+  servidor PostgreSQL respondiendo en esta sesión ni baseline autorizado
+  disponible. No se creó un esquema sustituto ni se aplicaron migraciones.
+- No se ejecutó concurrencia real de dos sesiones ni E2E administrado; el
+  control de estado esperado tiene prueba SQL pendiente. No hubo commit/push,
+  merge ni despliegue.
+
+M03–M05 siguen **PARCIALES** hasta ejecutar la migración y regresión SQL sobre
+el baseline aprobado y cerrar las brechas restantes de Triage/Radar descritas
+arriba.
+
+### Revisión independiente de permisos, Radar y eliminación — 2026-10-08
+
+Checkout local: rama `codex/p1-validation-review-20261008`, base commit
+`676ae38ef286b3375a80076ce422ba6e4aba786c`. Contraste disponible: la matriz
+versionada `docs/relanzamiento/MATRIZ_PERMISOS_V2.md` separa visibilidad por
+alcance de cambios; la copia íntegra del Documento 02 no estuvo disponible en
+esta sesión.
+
+Hallazgos confirmados en el código:
+
+- La migración P1 permitía que `view_all_tasks` o `view_area_tasks` por sí
+  solos autorizaran `UPDATE` y transiciones. Ambos son permisos de lectura en
+  la matriz; `reassign_tasks` es el permiso explícito de mutación.
+- Radar devolvía solo `requires_review` al vencer un seguimiento, ocultando
+  simultáneamente una continuidad sin responsable, acción o condición útil.
+- La interfaz ejecutaba `DELETE` definitivo y advertía que se perdería el
+  historial, que tiene borrado en cascada. La política de borrado también
+  habilitaba el rol administrador sin exigir `delete_tasks`, contrario al
+  mínimo privilegio documentado.
+
+Correcciones preparadas en código y pruebas, sin ejecución SQL aún:
+
+- La migración P1 limita cambios al responsable o a usuarios con permiso de
+  mutación y alcance explícitos; el permiso delegado no permite editar el
+  contenido de tareas ajenas.
+- El estado combinado `requires_review_unprotected` conserva ambas señales y
+  se cuenta en las dos métricas de Radar.
+- `delete_tasks` archiva con motivo y auditoría; conserva Task e historial,
+  rechaza borrado físico y no permite archivar mientras haya continuidad
+  activa. La UI ya no llama a `DELETE`.
+- Se agregó prueba SQL de lectura/escritura para `view_all_tasks` y
+  `view_area_tasks`, y pruebas de archivo, historial, reintento y continuidad.
+
+Verificación ejecutada en esta sesión:
+
+- `npm run test:operations`: PASS, reglas operativas 4/4 y finanzas Node 1/1.
+- `npx --no-install tsc --noEmit`: PASS.
+- `npm run build` con URL/clave pública ficticias y efímeras: PASS, 11/11
+  páginas; no prueba conectividad ni Auth.
+- `git diff --check`: PASS.
+- **SQL NO EJECUTADO:** `pg_isready -h 127.0.0.1 -p 5433` no obtuvo respuesta.
+  No se aplicó la migración correctiva ni la suite SQL. Su ejecución requiere
+  PostgreSQL local con el baseline autorizado y sanitizado.
+- Sin commit ni push; no se tocó `main`, Supabase administrado o producción.
+
+Resultado: revisión de código corregida, pero los cambios SQL y el archivo
+auditable aún necesitan validación en PostgreSQL. P1 y M03–M05 permanecen
+**PARCIALES**; el respaldo remoto de esta rama sigue pendiente.

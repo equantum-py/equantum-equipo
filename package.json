@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:storage:staging": "node scripts/relaunch/storage-staging-rls.mjs"
+    "test:storage:staging": "node scripts/relaunch/storage-staging-rls.mjs",
+    "test:operations": "node scripts/relaunch/task-triage-radar.test.cjs && node --test scripts/relaunch/finance-summary.test.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
