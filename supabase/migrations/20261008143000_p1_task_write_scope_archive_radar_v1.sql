@@ -7,7 +7,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
   SELECT public.is_active_user()
     AND EXISTS (
@@ -37,7 +37,7 @@ CREATE OR REPLACE FUNCTION public.guard_task_reassignment()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 BEGIN
   IF NEW.assignee_id IS DISTINCT FROM OLD.assignee_id THEN
@@ -133,6 +133,24 @@ WITH CHECK (
   )
 );
 
+-- A task creator has no permanent read access after assignment moves away.
+-- Read access comes from current assignment, explicit view scope, or another
+-- separately modeled authorization; creator identity alone is insufficient.
+DROP POLICY IF EXISTS "tasks read" ON public.tasks;
+CREATE POLICY "tasks read"
+ON public.tasks FOR SELECT TO authenticated
+USING (
+  public.is_active_user()
+  AND (
+    assignee_id = auth.uid()
+    OR public.has_task_permission('view_all_tasks')
+    OR (
+      public.has_task_permission('view_area_tasks')
+      AND public.task_assignee_in_my_area(tasks.assignee_id)
+    )
+  )
+);
+
 -- A delete permission is an audited archival action, not permission to erase
 -- the task and its cascading status history.
 ALTER TABLE public.tasks
@@ -166,7 +184,7 @@ CREATE OR REPLACE FUNCTION public.archive_task(p_task_id uuid, p_reason text)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE v_task public.tasks%ROWTYPE;
 BEGIN

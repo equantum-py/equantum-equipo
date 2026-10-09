@@ -42,7 +42,7 @@ GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;
 
 INSERT INTO public.tasks(id,title,area,task_type,created_by,assignee_id,ticket_id)
 SELECT 'd0c0a000-0000-4000-8000-0000000000e1'::uuid,
-       'QA-READ-SCOPE-WRITE-DENIAL',owner_area,task_type,owner_id,owner_id,ticket_id
+       'QA-READ-SCOPE-WRITE-DENIAL',owner_area,task_type,reader_id,owner_id,ticket_id
 FROM qa_p1_scope_fixture;
 INSERT INTO public.task_status_history(task_id,from_status,to_status,actor_id,reason,metadata)
 VALUES('d0c0a000-0000-4000-8000-0000000000e1','pending','in_progress',
@@ -84,6 +84,9 @@ BEGIN
   UPDATE public.tasks SET title='QA-UNAUTHORIZED-EDIT' WHERE id='d0c0a000-0000-4000-8000-0000000000e1';
   GET DIAGNOSTICS v_count=ROW_COUNT;
   IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: view_all_tasks authorized raw UPDATE'; END IF;
+  UPDATE public.tasks SET assignee_id=v_reader WHERE id='d0c0a000-0000-4000-8000-0000000000e1';
+  GET DIAGNOSTICS v_count=ROW_COUNT;
+  IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: view_all_tasks authorized reassignment'; END IF;
   RAISE NOTICE 'PASS: view_all_tasks reads task/history but cannot transition or update';
 END
 $$;
@@ -119,6 +122,9 @@ BEGIN
   UPDATE public.tasks SET title='QA-UNAUTHORIZED-EDIT' WHERE id='d0c0a000-0000-4000-8000-0000000000e1';
   GET DIAGNOSTICS v_count=ROW_COUNT;
   IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: view_area_tasks authorized raw UPDATE'; END IF;
+  UPDATE public.tasks SET assignee_id=v_reader WHERE id='d0c0a000-0000-4000-8000-0000000000e1';
+  GET DIAGNOSTICS v_count=ROW_COUNT;
+  IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: view_area_tasks authorized reassignment'; END IF;
   RAISE NOTICE 'PASS: view_area_tasks reads in-area task but cannot transition or update';
 END
 $$;
@@ -145,6 +151,29 @@ BEGIN
     IF SQLERRM NOT LIKE 'TASK_REASSIGNMENT_ONLY%' THEN RAISE; END IF;
   END;
   RAISE NOTICE 'PASS: reassign_tasks does not authorize foreign-task content edits';
+END
+$$;
+RESET ROLE;
+
+-- Creator identity alone is not a permanent access grant after assignment is
+-- held by someone else and the creator has no explicit view scope.
+UPDATE public.user_permissions
+SET view_all_tasks=false,view_area_tasks=false,reassign_tasks=false,delete_tasks=false
+WHERE user_id=(SELECT reader_id FROM qa_p1_scope_fixture);
+SET LOCAL ROLE authenticated;
+DO $$
+DECLARE v_creator uuid; v_count integer;
+BEGIN
+  SELECT reader_id INTO v_creator FROM qa_p1_scope_fixture;
+  PERFORM set_config('request.jwt.claims',json_build_object('sub',v_creator,'role','authenticated')::text,true);
+  PERFORM set_config('request.jwt.claim.sub',v_creator::text,true);
+  PERFORM set_config('request.jwt.claim.role','authenticated',true);
+  SELECT count(*) INTO v_count FROM public.tasks WHERE id='d0c0a000-0000-4000-8000-0000000000e1';
+  IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: creator retained task visibility without assignment or scope'; END IF;
+  SELECT count(*) INTO v_count FROM public.task_status_history
+  WHERE task_id='d0c0a000-0000-4000-8000-0000000000e1';
+  IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: creator retained history visibility without task scope'; END IF;
+  RAISE NOTICE 'PASS: creator alone does not retain task or history visibility';
 END
 $$;
 RESET ROLE;

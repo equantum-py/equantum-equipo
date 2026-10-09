@@ -1211,3 +1211,44 @@ Verificación ejecutada en esta sesión:
 Resultado: revisión de código corregida, pero los cambios SQL y el archivo
 auditable aún necesitan validación en PostgreSQL. P1 y M03–M05 permanecen
 **PARCIALES**; el respaldo remoto de esta rama sigue pendiente.
+
+### Seguimiento de permisos y trazabilidad — 2026-10-09
+
+Se contrastó el cambio con el Documento 02 v1.2 incluido en
+`DOCUMENTOS_RECTORES(4).zip`, especialmente §30, reglas de autorización de
+Tareas, y con Documento 03 §§98–100. La regla rectora establece que ser creador
+no conserva visibilidad si la persona deja de ser responsable/colaborador y no
+tiene otro permiso de alcance. La política P1 previa todavía incluía
+`created_by = auth.uid()`; se eliminó ese acceso implícito en la migración
+correctiva y se añadió un caso negativo de lectura de Tarea e historial.
+
+También se ampliaron los casos de `view_all_tasks` y `view_area_tasks` para
+rechazar reasignación directa, además de transición, archivo y edición de
+contenido. Las funciones `SECURITY DEFINER` introducidas en la migración de
+archivo fijan ahora `search_path` vacío y califican explícitamente sus objetos.
+Radar conserva simultáneamente vencimiento y falta de protección en el estado
+combinado, sus dos contadores y la presentación de la fila.
+
+Verificación de esta sesión en la rama local derivada
+`codex/p1-hardening-20261009`:
+
+- `npm run test:operations`: PASS, 4/4 pruebas de Tareas/Triage/Radar y 1/1
+  prueba financiera Node.
+- `npx --no-install tsc --noEmit`: PASS, ejecutado después del build para no
+  competir por los tipos generados de `.next`.
+- `npm run build` con URL y clave pública ficticias, efímeras y limitadas al
+  proceso: PASS, 11/11 páginas. No valida conexión, Auth ni RLS remotos.
+- `bash -n` para los runners SQL y `git diff --check`: PASS.
+- SQL: NO EJECUTADO. En este runtime no están disponibles `psql`,
+  `pg_isready`, Docker ni `$HOME/staging-baseline.dump`; por tanto no se aplicó
+  la migración correctiva ni se ejecutó la regresión. El rechazo SQL de acceso
+  permanente del creador queda implementado y versionado, pero aún sin
+  verificación PostgreSQL.
+
+El árbol local coincide con el árbol del respaldo P1 remoto
+`5257b445faa862ab3a9c33da5658e9e6b23e6472` (`02a413a4…`). La rama de trabajo
+local nueva parte del commit P1 `676ae38`; no hubo push, merge ni despliegue en
+este seguimiento. Esta confirmación posterior reemplaza el estado histórico
+“respaldo pendiente” registrado en la nota del 2026-10-08. P1 y M03–M05
+continúan **PARCIALES** hasta validar la migración y sus pruebas en PostgreSQL
+aislado con baseline autorizado.
