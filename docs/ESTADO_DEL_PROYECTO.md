@@ -5,14 +5,12 @@ Actualizado: 2026-10-10 UTC. Resumen de trabajo local; no representa producción
 ## Resumen
 
 P1/M03–M05 tiene implementación candidata de Tareas, Triage y Radar, pero sigue
-PARTIAL. El esquema de prueba fue reconstruido y las 24 migraciones del runner
-están aplicadas en `eQuantum P1 Pruebas` (25 registros de historial: 1 baseline
-estructural y 24 migraciones versionadas). La verificación actual encontró que
-el trigger de Auth y el bucket/las políticas de escritura de Storage no están
-reproducidos en ese proyecto. El archivo de 59 escenarios recuperado contiene
-59 IDs únicos, todos `PREPARADO — NO EJECUTADO`; no representa aceptación formal.
-Esto no valida producción.
-
+PARTIAL. El esquema de prueba se reconstruyó en `eQuantum P1 Pruebas`; el trigger
+Auth fue corregido y comprobado estructuralmente en ese proyecto. Se verificó
+una denegación SQL para anon. El bucket privado de Storage todavía falta y no se
+crearon usuarios Auth sintéticos: de los 59 casos, 1 tiene PASS acotado, 57 están
+BLOQUEADOS por fixtures Auth/datos y 1 limpieza final NO EJECUTADA. Nada de esto
+es aceptación formal ni valida producción.
 ## Ejecución P1 en Supabase de pruebas — 2026-10-10
 
 - Destino confirmado antes de escribir: `equantum-p1-pruebas`, ref
@@ -202,6 +200,45 @@ Vercel ni Supabase remoto.
 Daniel y Derlis revisan y aprueban/corrigen el protocolo y el orden de paquetes.
 Luego continuar P1 con baseline local autorizado y evidencia por escenario. No
 iniciar P2 automáticamente.
+
+## Resguardo de herramientas de laboratorio — 2026-10-10
+
+Después de la anotación histórica anterior, los seis archivos actuales de
+preparación se publicaron como commits de revisión en la rama
+`codex/p1-test-lab-review-20261010`, basada en la candidata P1 remota
+`codex/p1-maestro-activation-20261009` (`43714c65204eaf796adab3094e44e6ccf234603c`).
+PR #5 está abierta como Draft hacia esa candidata. Incluye únicamente este estado,
+`WORKLOG.md`, el baseline de estructura, el preflight, el smoke test y el CSV
+original de 59 casos. No se integró la PR #3 ni se hizo merge.
+
+Verificaciones de esta ejecución: `git diff --check` PASS; `bash -n` del
+preflight PASS; el CSV conserva 59 IDs auxiliares únicos y 59 estados
+`PREPARADO — NO EJECUTADO` (SHA-256
+`02f2cbf9cc399ef826cd170009104a685361affa638bc48cb09b11898aff5441`). Se
+ejecutó el smoke test actualizado contra `rqisyolaffwktxhjwpqq`: BLOQUEADO,
+como corresponde, porque falta el trigger Auth
+`on_auth_user_created → public.handle_new_user()`. Las pruebas de actor siguen
+NO EJECUTADAS. El checkout local conserva sus cambios sin commit; la rama de
+revisión fue creada separadamente mediante GitHub.
+
+## P1 — trigger Auth, ACL de laboratorio y primera ejecución de escenarios — 2026-10-10 UTC
+
+- Confirmé antes de escribir el ref de destino `rqisyolaffwktxhjwpqq` (`equantum-p1-pruebas`, PostgreSQL 17.11). No se ejecutó ninguna escritura en `eQuantum Equipo` (`oujrahzvljdhzqsdyujh`).
+- Causa confirmada del trigger ausente: la función `public.handle_new_user()` estaba presente, pero no existía un trigger homónimo en `auth.users`; el baseline de estructura no reconstruyó el trigger.
+- Se aplicó en el test target la migración idempotente `p1_auth_user_profile_trigger_v1` (historial `20261010182514`). No reemplaza un trigger con otro destino ni habilita silenciosamente uno desactivado. Después se verificó que `on_auth_user_created` está habilitado y llama exactamente a `public.handle_new_user()`.
+- Se ejecutó `supabase/tests/p1_auth_user_profile_trigger_v1.sql` contra el test target: PASS estructural. La llamada real del trigger durante creación Auth permanece NO EJECUTADA hasta crear cuentas ficticias mediante Auth Admin API; no se insertó en `auth.users`.
+- `supabase/tests/security_rls_v3.sql` también pasó contra el target luego de retirar solo la directiva de cliente `psql` no aceptada por MCP; comprobó la policy Storage, las 12 tablas V2 con RLS y sus policies. `supabase/tests/p1_anon_role_access_v1.sql` pasó con el rol `anon` y ROLLBACK.
+- En `client_legacy_services`, RLS estaba activo/sin políticas pero `anon` y `authenticated` tenían `TRUNCATE` efectivo. RLS no protege TRUNCATE. Se aplicó en el test target la revocación mínima `p1_revoke_legacy_service_truncate` (`20261010182831`). Verificación posterior: anon=false, authenticated=false; service_role conserva el valor preexistente. Producción no se inspeccionó ni modificó en esta acción; no se extrapola el ACL del laboratorio a producción.
+- Se prepararon en el test target únicamente privilegios bajo policies existentes: `authenticated` obtiene SELECT/INSERT/UPDATE en Followups y Radar, SELECT/INSERT en task_events; no recibe DELETE ni UPDATE de task_events y anon no recibe acceso. Para el script de fixtures, service_role obtiene SELECT de profiles/user_permissions y clients/client_portal_users, INSERT/DELETE solo en clients/client_portal_users y UPDATE de columnas concretas `profiles.active`, `user_permissions.view_all_tasks/view_own_tasks`. No hay GRANT ALL ni se desactivó RLS. La repetición verificable está en `scripts/relaunch/p1-test-lab-actor-acl.sql`.
+- Historial de cambios test-only vía MCP: `20261010183105 p1_minimum_actor_acl`, `20261010183426 p1_fixture_profile_verify_read`, `20261010183555 p1_auth_fixture_scoped_acl`. Son ACL de laboratorio, no migraciones de producto; el helper SQL versionado conserva sus comandos acotados. Mantener el target de pruebas aislado.
+- `P1-ANON-ROLE-AUTH`: PASS acotado en `supabase/tests/p1_anon_role_access_v1.sql`. Bajo `SET LOCAL ROLE anon`, el RPC de transición y SELECT de tasks fueron rechazados por `insufficient_privilege`; terminó con ROLLBACK. Es prueba de autorización PostgreSQL, no E2E de JWT/HTTP.
+- El preflight de fixtures mostró solo conteos en el test target: `auth.users=0`, profiles/clients/tasks/tickets/followups/radar_items=0. No se crearon residuos.
+- `test-project-schema-smoke.sql` fue re-ejecutado: BLOQUEADO correctamente porque falta el bucket privado `ticket-attachments`. El CSV de 59 casos no contiene casos de Storage; Storage sigue siendo una dependencia separada del conjunto.
+- Resultado del CSV actualizado por ID: 1 PASS acotado (`P1-ANON-ROLE-AUTH`), 57 BLOQUEADOS por faltar usuarios Auth sintéticos y fixtures, 1 NO EJECUTADO (`P1-POSTROLLBACK-CLEAN`, que corresponde al teardown después del lote). Los otros 57 escenarios requieren actor Auth y datos de aplicación aislados; `P1-AUTH-PORTAL` requiere además mapping Portal. No hay un escenario Storage entre los 59.
+- `scripts/relaunch/p1-auth-fixtures.mjs` prepara seis identidades ficticias por Auth Admin API: responsable interno, par interno no autorizado, lector con view_all_tasks, interno inactivo, Portal A y Portal B. Verifica el perfil/permisos creados por trigger, asigna flags de prueba estrechos, crea dos clientes sintéticos y mappings Portal; limpieza borra usuarios mediante Admin API (nunca DML en auth.users) y clientes sintéticos, con state file fuera del repo, modo 0600. El script está preparado pero no ejecutado porque esta sesión no tiene la clave service_role del test project; no solicitarla por chat.
+- Regresión local `npm run test:operations`: PASS (4/4 casos Tareas/Triage/Radar y 1/1 caso financiero). `node --check` de fixture Auth y `bash -n` del preflight/runner: PASS. No se repitió build porque no hubo cambios de app.
+- La configuración privada también restringe TRUNCATE en el test target. El bucket privado y sus policies INSERT/DELETE siguen ausentes; ningún archivo fue subido.
+- Suite SQL completa y 59 escenarios funcionales: NO EJECUTADOS/BLOQUEADOS mientras no haya Auth fixtures. P1/M03–M05 sigue PARTIAL. PR #3 permanece sin integrar y PR #5 permanece abierta como revisión; no se hizo merge ni despliegue.
 
 ## Resguardo de herramientas de laboratorio — 2026-10-10
 
