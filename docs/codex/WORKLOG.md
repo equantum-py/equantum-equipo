@@ -389,10 +389,9 @@ borrar historia; agregar una entrada correctiva si un hecho cambia.
   ejecutaron DDL, Auth Admin, Storage API ni fixtures.
 - Se creó la rama `codex/p1-test-lab-review-20261010` desde el HEAD remoto de la
   candidata P1 `43714c65204eaf796adab3094e44e6ccf234603c`; se abrió Draft PR #5
-  hacia esa candidata. La comparación remota informa exactamente seis archivos
-  nuevos y seis commits; HEAD remoto
-  `32b24aa6cb28ef96b21d4a7937f30221ad70f2f7`. No hubo merge y PR #3 permanece
-  separada. Los cambios locales de esta sesión siguen sin commit en el
-  checkout; el resguardo remoto se hizo por GitHub.
+  hacia esa candidata. La comparación remota informa exactamente los seis
+  archivos indicados; no hubo merge y PR #3 permanece separada. Los cambios
+  locales de esta sesión siguen sin commit en el checkout; el resguardo remoto
+  se hizo por GitHub.
 - `docs/PLAN_MAESTRO.md` se contrastó: se mantienen los nombres, orden y
   alcance P1–P7 y los gates E0–E8; no se cambió ni recortó la nomenclatura.
