@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:storage:staging": "node scripts/relaunch/storage-staging-rls.mjs"
+    "test:storage:staging": "node scripts/relaunch/storage-staging-rls.mjs",
+    "test:operations": "node scripts/relaunch/task-triage-radar.test.cjs && node --test scripts/relaunch/finance-summary.test.cjs",
+    "validate:p1:app-local": "bash scripts/relaunch/validate-p1-app-local.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

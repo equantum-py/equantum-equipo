@@ -1,0 +1,41 @@
+name: P1 application checks
+
+on:
+  pull_request:
+    branches:
+      - relanzamiento-2026
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p1-app-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  app-checks:
+    # Keep the runner limited to same-repository branches; do not execute code from forks.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install project dependencies
+        run: npm install --no-save --no-package-lock --no-audit --no-fund
+
+      - name: Run local-safe P1 application checks
+        run: npm run validate:p1:app-local
+
+# Pull-request app checks only: no deployment, Supabase credentials, SQL, or remote DB.
+# SQL remains gated on an approved isolated PostgreSQL baseline.
