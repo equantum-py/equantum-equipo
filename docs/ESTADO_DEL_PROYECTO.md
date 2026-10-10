@@ -202,3 +202,24 @@ Vercel ni Supabase remoto.
 Daniel y Derlis revisan y aprueban/corrigen el protocolo y el orden de paquetes.
 Luego continuar P1 con baseline local autorizado y evidencia por escenario. No
 iniciar P2 automáticamente.
+
+## Resguardo de herramientas de laboratorio — 2026-10-10
+
+Después de la anotación histórica anterior, los seis archivos actuales de
+preparación se publicaron como commits de revisión en la rama
+`codex/p1-test-lab-review-20261010`, basada en la candidata P1 remota
+`codex/p1-maestro-activation-20261009` (`43714c65204eaf796adab3094e44e6ccf234603c`).
+PR #5 está abierta como Draft hacia esa candidata; HEAD
+`32b24aa6cb28ef96b21d4a7937f30221ad70f2f7`. Incluye únicamente este estado,
+`WORKLOG.md`, el baseline de estructura, el preflight, el smoke test y el CSV
+original de 59 casos. No se integró la PR #3 ni se hizo merge.
+
+Verificaciones de esta ejecución: `git diff --check` PASS; `bash -n` del
+preflight PASS; el CSV conserva 59 IDs auxiliares únicos y 59 estados
+`PREPARADO — NO EJECUTADO` (SHA-256
+`02f2cbf9cc399ef826cd170009104a685361affa638bc48cb09b11898aff5441`). Se
+ejecutó el smoke test actualizado contra `rqisyolaffwktxhjwpqq`: BLOQUEADO,
+como corresponde, porque falta el trigger Auth
+`on_auth_user_created → public.handle_new_user()`. Las pruebas de actor siguen
+NO EJECUTADAS. El checkout local conserva sus cambios sin commit; la rama de
+revisión fue creada separadamente mediante GitHub.
