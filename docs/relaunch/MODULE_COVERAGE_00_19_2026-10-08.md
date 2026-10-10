@@ -16,9 +16,9 @@ Es un inventario inicial para priorizar auditorías módulo por módulo, no una 
 | 00 | Visión y principios | **PARCIAL (transversal)**; documento rector definitivo | Este checkpoint; los módulos propietarios existentes y el Documento 12 | La visión completa depende de módulos aún pendientes y de aceptación formal; M00 no es una función aislada |
 | 01 | Arquitectura y seguridad | **PARCIAL** | `docs/relaunch/M01_ARCHITECTURE_SECURITY_REVIEW_2026-10-08.md`; Auth/RLS/MFA Master y restore PostgreSQL local registrados | Doble control Master, expiración por inactividad, MFA para permisos sensibles, audit log central, revocación remota de sesiones, salud/alertas y validación formal/externa siguen abiertos |
 | 02 | Usuarios y permisos | **PARCIAL** | `app/admin/page.tsx`, políticas y pruebas SQL de permisos/RLS; estado de implementación | Ciclos de usuario, onboarding, alcance y administración sensible no están aceptados formalmente |
-| 03 | Tareas | **PARCIAL** | Migraciones y tests de permisos, historial, triage e integración con Tickets | Los criterios de espera/bloqueo y cierre de Proyecto siguen señalados con gaps en la matriz de aceptación |
-| 04 | Triage | **PARCIAL** | `20261007_triage_engine_v2.sql`, `golden_triage_v2.sql`, `tasks_triage_integration_v2.sql` | Situación multiobjeto, métricas/agrupación y override auditable no están demostrados como módulo completo |
-| 05 | Radar y seguimiento | **PARCIAL** | Migraciones Radar, Golden Radar, acceso y dashboard registrados en el estado | E2E visual y validación integrada final pendientes |
+| 03 | Tareas | **PARCIAL** | Migraciones existentes más `20261008120000_tasks_radar_workflow_v3.sql`, UI de estados/contexto y test SQL versionado | Nueva migración/regresión no ejecutada en PostgreSQL en esta sesión; cierre de Proyecto, dependencias, historial visible y E2E siguen pendientes |
+| 04 | Triage | **PARCIAL** | `20261007_triage_engine_v2.sql`, tests Golden existentes; dashboard ahora muestra razones/categorías humanas | Fórmula V2 sigue limitada a señales de Task; situaciones multiobjeto, doble conteo y override auditado pendientes |
+| 05 | Radar y seguimiento | **PARCIAL** | Motor/vista existentes; nuevo enlace transaccional desde Task esperando y estados de salud en interfaz | SQL nuevo no ejecutado; notificaciones/background, eventos de Ticket, reconocimiento separado de cierre, escalamiento/capacidad y E2E pendientes |
 | 06 | eQ asistente de decisión | **PARCIAL** | `app/api/ai/assistant/route.ts`, `lib/ai/assistant-handler.ts`, frontera financiera y pruebas locales | El estado oficial mantiene eQ completo como PENDING; falta comprobar capacidades de decisión autorizada de punta a punta |
 | 07 | Business Intelligence | **FALTANTE** | El estado oficial lista BI V2 como PENDING; existen componentes/datos financieros que no equivalen a BI completo | Definiciones/KPI, reportes, hallazgos y aceptación de BI según Documento 07 |
 | 08 | Clientes y ventas | **PARCIAL** | Migraciones comerciales, `CommercialWorkflow.tsx`, Golden comercial y flujo financiero/comercial | Quedan criterios de borde e integración del ciclo comercial por ejecutar; la cobertura de pruebas no sustituye ACC formal |
@@ -75,3 +75,31 @@ la evidencia histórica. Ver:
 
 La clasificación de módulos de este inventario describe cobertura funcional,
 no aceptación formal. La matriz fuente de criterios mantiene `NO EJECUTADO`.
+
+### Revalidación de Fase 1 — 2026-10-08
+
+Se repitieron en el checkout local de `relanzamiento-2026`:
+
+- `npm run test:operations`: PASS, 4/4 reglas operativas y 1/1 suite
+  financiera.
+- `npx --no-install tsc --noEmit`: PASS.
+- Build Next.js con valores públicos ficticios y efímeros: PASS, 11/11
+  páginas generadas; no es una prueba de conexión a Supabase.
+- PostgreSQL 17.11 responde localmente, pero no hay dump baseline accesible
+  y no existe `equantum_restore_clean`; por tanto la migración y los tests
+  SQL de Fase 1 no se ejecutaron. Los 28/28 anteriores son evidencia
+  histórica, no resultado de esta ejecución.
+
+M03–M05 permanecen **PARCIALES**. El checkout conserva la migración y prueba
+`tasks_radar_workflow_v3`; no se publican como validadas hasta ejecutar ambos
+sobre un restore real del baseline del proyecto. Siguen abiertos los
+requisitos indicados en las brechas de módulos 03–05 arriba.
+
+#### P1 aprobado D1/D2/D4/D6 — ejecución actual 2026-10-08
+
+El RPC y la interfaz implementan verificación de salida de ESPERANDO,
+reapertura diferenciada, autorización explícita en base de datos e idempotencia
+por estado esperado. Prueba Node 4/4, TypeScript PASS y build PASS con variables
+públicas ficticias (11/11 páginas; sin conexión a Supabase). Los 59 casos
+SQL siguen NO EJECUTADOS: esta sesión no dispone de PostgreSQL activo ni del
+baseline autorizado. No se marca aceptación formal; M03–M05 siguen PARCIALES.

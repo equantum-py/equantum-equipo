@@ -53,39 +53,23 @@ BEGIN
 
   RAISE NOTICE '4/7 Sin reassign_tasks no puede reasignar';
 
-  BEGIN
-    UPDATE public.tasks
-    SET assignee_id = v_master
-    WHERE id = v_marketing_task;
-
-    RAISE EXCEPTION
-      'FAIL: reasignacion fue permitida sin reassign_tasks';
-
-  EXCEPTION
-    WHEN OTHERS THEN
-      IF SQLERRM LIKE 'FAIL:%' THEN
-        RAISE;
-      END IF;
-
-      IF SQLERRM NOT LIKE '%No tiene permiso para reasignar tareas%' THEN
-        RAISE EXCEPTION
-          'FAIL: bloqueo inesperado al reasignar: %',
-          SQLERRM;
-      END IF;
-  END;
+  UPDATE public.tasks
+  SET assignee_id = v_master
+  WHERE id = v_marketing_task;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'FAIL: read scope without reassign_tasks changed assignee';
+  END IF;
 
 
   RAISE NOTICE '5/7 Sin delete_tasks no puede borrar';
 
-  DELETE FROM public.tasks
-  WHERE id = v_marketing_task;
-
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-
-  IF v_count <> 0 THEN
-    RAISE EXCEPTION
-      'FAIL: Alejandra pudo borrar Task sin delete_tasks';
-  END IF;
+  BEGIN
+    DELETE FROM public.tasks WHERE id = v_marketing_task;
+    RAISE EXCEPTION 'FAIL: user without delete_tasks executed hard delete';
+  EXCEPTION WHEN SQLSTATE '42501' THEN
+    NULL;
+  END;
 
 
   RAISE NOTICE '6/7 Master conserva control total';
