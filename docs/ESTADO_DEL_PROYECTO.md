@@ -209,8 +209,7 @@ Después de la anotación histórica anterior, los seis archivos actuales de
 preparación se publicaron como commits de revisión en la rama
 `codex/p1-test-lab-review-20261010`, basada en la candidata P1 remota
 `codex/p1-maestro-activation-20261009` (`43714c65204eaf796adab3094e44e6ccf234603c`).
-PR #5 está abierta como Draft hacia esa candidata; HEAD
-`32b24aa6cb28ef96b21d4a7937f30221ad70f2f7`. Incluye únicamente este estado,
+PR #5 está abierta como Draft hacia esa candidata. Incluye únicamente este estado,
 `WORKLOG.md`, el baseline de estructura, el preflight, el smoke test y el CSV
 original de 59 casos. No se integró la PR #3 ni se hizo merge.
 
