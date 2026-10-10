@@ -28,6 +28,8 @@ MIGRATIONS=(
   "20261008031852_commercial_flow_v3.sql"
   "20261008120000_tasks_radar_workflow_v3.sql"
   "20261008143000_p1_task_write_scope_archive_radar_v1.sql"
+  "20261010182514_p1_auth_user_profile_trigger_v1.sql"
+  "20261010182831_p1_revoke_legacy_service_truncate.sql"
 )
 
 run_migrations() {

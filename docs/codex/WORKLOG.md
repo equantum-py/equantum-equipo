@@ -395,3 +395,96 @@ borrar historia; agregar una entrada correctiva si un hecho cambia.
   se hizo por GitHub.
 - `docs/PLAN_MAESTRO.md` se contrastó: se mantienen los nombres, orden y
   alcance P1–P7 y los gates E0–E8; no se cambió ni recortó la nomenclatura.
+
+## 2026-10-10 UTC — P1: trigger Auth, privilegios mínimos y primera prueba real
+
+- Destino validado antes de DDL: Supabase `eQuantum P1 Pruebas`, ref
+  `rqisyolaffwktxhjwpqq`, PostgreSQL 17.11. Producción (`oujrahzvljdhzqsdyujh`)
+  no recibió escrituras.
+- Causa confirmada: `public.handle_new_user()` existía, pero `auth.users` no
+  tenía `on_auth_user_created`. El trigger no se encontraba en las 24
+  migraciones que reconstruyeron el esquema. Se aplicó en el test target la
+  migración idempotente `p1_auth_user_profile_trigger_v1` versión
+  `20261010182514`; comprueba que función y trigger homónimo estén correctos,
+  falla si otro destino existe y crea el trigger solo si falta.
+- Después de aplicar, la consulta de catálogo verificó el trigger enabled
+  `O`, relación `auth.users` y `tgfoid=public.handle_new_user()`. Se ejecutó
+  `supabase/tests/p1_auth_user_profile_trigger_v1.sql` en el target sin error.
+  Esto valida definición/estado; el disparo real por Auth Admin API todavía no
+  se ejecutó porque no hay clave admin disponible en esta sesión. No se insertó
+  directamente en `auth.users`.
+- Se comprobó en `public.client_legacy_services` ACL efectiva `TRUNCATE=true`
+  para `anon` y `authenticated`; RLS no cubre TRUNCATE. Se aplicó solo en el
+  proyecto de prueba la revocación versionada `p1_revoke_legacy_service_truncate`
+  (`20261010182831`). Verificado después: anon=false, authenticated=false;
+  el ACL de service_role quedó sin cambio. La situación de producción no se
+  cambió ni se afirmó igual; cualquier revisión allí debe ser lectura y una
+  corrección separadamente autorizada.
+- Brecha del test lab resuelta con privilegios específicos bajo RLS ya
+  existente: `authenticated` tiene SELECT/INSERT/UPDATE sobre followups y
+  radar_items, SELECT/INSERT sobre task_events; sin DELETE ni UPDATE de eventos.
+  `anon` sigue sin acceso a esas tablas. El helper
+  `scripts/relaunch/p1-test-lab-actor-acl.sql` comprueba RLS/policies primero.
+- Las escrituras limitadas del fixture runner se restringen a service_role en
+  el test project: SELECT de `profiles`, `user_permissions`, `clients` y
+  `client_portal_users`; INSERT/DELETE solo de clientes sintéticos y sus
+  mappings; UPDATE de `profiles.active` y de `user_permissions.view_all_tasks`
+  /`view_own_tasks`. La revisión automática rechazó una propuesta inicial de
+  GRANT amplio a nueve tablas; esa propuesta no se aplicó. Se sustituyó por la
+  lista mínima anterior, aplicada como `p1_auth_fixture_scoped_acl`
+  (`20261010183555`) tras `p1_fixture_profile_verify_read`
+  (`20261010183426`). Ninguna policy se debilitó.
+- Se ejecutó exactamente `supabase/tests/p1_anon_role_access_v1.sql` mediante
+  Supabase MCP contra el test target. Bajo `SET LOCAL ROLE anon`, el RPC de
+  transición y `SELECT id FROM public.tasks` fueron rechazados por
+  `insufficient_privilege`; transacción cerrada con ROLLBACK: PASS para
+  denegación a nivel rol PostgreSQL, no prueba Data API/JWT HTTP.
+- `supabase/tests/security_rls_v3.sql` también pasó contra el test target
+  después de quitar su directiva local de `psql` (`\set`, no aceptada por el
+  ejecutor MCP). Verificó las políticas Storage/RLS y las 12 tablas V2 con sus
+  policies; no ejecutó fixtures ni cambió datos.
+- Se re-ejecutó `scripts/relaunch/p1-test-lab-actor-acl.sql` con
+  `supabase_execute_sql`; terminó correctamente. Verificaciones: grants
+  explícitos activos de los comandos permitidos, DELETE/UPDATE no autorizados
+  siguen falsos, anon no obtiene esos privilegios, `service_role` no obtuvo
+  acceso a tasks ni UPDATE de role/financial_info; TRUNCATE denegado para anon
+  y authenticated.
+- Smoke `scripts/relaunch/test-project-schema-smoke.sql` se ejecutó de nuevo y
+  devolvió `BLOCKED: private Storage bucket ticket-attachments is missing`.
+  No se creó bucket ni objeto: la conexión disponible no expone Storage API y
+  la lista de 59 casos no contiene un escenario Storage.
+- Conteos seguros del estado previo a fixtures en el test target:
+  `auth.users=0`, `profiles=0`, `clients=0`, `tasks=0`, `tickets=0`,
+  `followups=0`, `radar_items=0`, bucket privado=0.
+- El CSV conserva 59 IDs únicos. Estado actual individual: 1 PASS
+  (`P1-ANON-ROLE-AUTH`, alcance limitado explicado en evidencia CSV), 57
+  BLOQUEADOS por identidades Auth y fixtures sintéticos ausentes, 1
+  NO EJECUTADO (`P1-POSTROLLBACK-CLEAN`, reservado al final). No se marcó
+  aceptación formal ni P1 completo. El set de 57 implica Auth users/API y tareas
+  aisladas; `P1-AUTH-PORTAL` también necesita mapping Portal.
+- Se creó `scripts/relaunch/p1-auth-fixtures.mjs`, que usa Auth Admin API
+  (no inserta `auth.users`) para seis usuarios efímeros, confirma perfil y
+  permisos de trigger, prepara viewer/inactivo, dos clientes/mappings Portal y
+  limpia por API con verificación de cascada. Guarda el estado/passwords
+  sintéticos fuera del repo con permisos 0600. `create`, `verify`, `cleanup`
+  requieren variables locales protegidas; el script no se ejecutó porque esta
+  sesión carece del service_role key del proyecto de pruebas. No pedir la clave
+  por chat.
+- El runner de migraciones añade los dos SQL versionados nuevos, total actual
+  26. No se ejecutó localmente porque esta sesión no tiene Docker/psql; las dos
+  migraciones y tres ACL fixture overrides sí se aplicaron en el test project
+  citado. Los ajustes de ACL de laboratorio no alteran producción.
+- Regresión de aplicación `npm run test:operations`: PASS (4/4 tests de
+  Tareas/Triage/Radar y 1/1 test financiero). `node --check` del script Auth y
+  `bash -n` de ambos runners/preflight: PASS. El intento de `create` sin el ref
+  de destino fue BLOQUEADO antes de hacer solicitudes de red. No se repitió
+  `build`: no se modificó código de aplicación.
+- El trabajo local aún incluye modificaciones previas ajenas a este bloque.
+  No se hizo commit/force push/merge/deploy; PR #3 sigue sin integrar y PR #5
+  sigue abierta. La corrección debe ir a una rama nueva de revisión derivada
+  del HEAD de PR #5, sin reescribir ramas existentes.
+- Siguiente puerta real: ejecutar el script Auth localmente con la clave
+  `service_role` de eQuantum P1 Pruebas dentro de un entorno privado (no
+  compartirla), devolver solo los UUID ficticios; después sembrar el único
+  Ticket/tipos requeridos por SQL usando el owner del test project, ejecutar
+  los escenarios bajo `authenticated` y terminar con cleanup verificado.
