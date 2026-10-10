@@ -369,3 +369,30 @@ borrar historia; agregar una entrada correctiva si un hecho cambia.
   transaccionales, y obtener una vía aprobada de crear/limpiar actores Auth
   ficticios. Entonces ejecutar tests SQL y clasificar los 59 escenarios uno
   por uno. PR #3 sigue draft y no se integró.
+
+## 2026-10-10 UTC — P1: resguardo de laboratorio en PR #5
+
+- Se verificaron los seis paths del paquete: `docs/ESTADO_DEL_PROYECTO.md`,
+  este worklog, `docs/relaunch/acceptance/P1_SCENARIOS_59.csv`,
+  `scripts/relaunch/p1-test-only-baseline.sql`,
+  `scripts/relaunch/p1-test-target-preflight.sh` y
+  `scripts/relaunch/test-project-schema-smoke.sql`.
+- Validación local actual: `git diff --check` PASS; `bash -n
+  scripts/relaunch/p1-test-target-preflight.sh` PASS; CSV 59/59 IDs únicos,
+  todos `PREPARADO — NO EJECUTADO`, hash
+  `02f2cbf9cc399ef826cd170009104a685361affa638bc48cb09b11898aff5441`.
+  La búsqueda local de patrones comunes de secretos no encontró coincidencias
+  en los seis archivos.
+- El smoke test exacto se ejecutó contra el ref de pruebas
+  `rqisyolaffwktxhjwpqq` y devolvió BLOQUEADO por ausencia del trigger
+  habilitado `on_auth_user_created` hacia `public.handle_new_user()`. No se
+  ejecutaron DDL, Auth Admin, Storage API ni fixtures.
+- Se creó la rama `codex/p1-test-lab-review-20261010` desde el HEAD remoto de la
+  candidata P1 `43714c65204eaf796adab3094e44e6ccf234603c`; se abrió Draft PR #5
+  hacia esa candidata. La comparación remota informa exactamente seis archivos
+  nuevos y seis commits; HEAD remoto
+  `32b24aa6cb28ef96b21d4a7937f30221ad70f2f7`. No hubo merge y PR #3 permanece
+  separada. Los cambios locales de esta sesión siguen sin commit en el
+  checkout; el resguardo remoto se hizo por GitHub.
+- `docs/PLAN_MAESTRO.md` se contrastó: se mantienen los nombres, orden y
+  alcance P1–P7 y los gates E0–E8; no se cambió ni recortó la nomenclatura.
