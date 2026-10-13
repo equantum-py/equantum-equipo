@@ -45,6 +45,29 @@ borrar historia; agregar una entrada correctiva si un hecho cambia.
   Auth/RLS, E2E del flujo y evidencia por escenario. No se convierte a fechas:
   no hay capacidad semanal confirmada en los documentos.
 
+## 2026-10-13 UTC — corrección de acceso de consulta en Preview Prospectos
+
+- Derlis compartió una captura de la Preview protegida: la página carga con
+  cero Prospectos y no presenta el botón “Nuevo Prospecto”. La captura muestra
+  el usuario ficticio `P1 synthetic internal owner`; no incluye un código de
+  error de lectura.
+- Causa comprobada en el código: el botón solo aparece cuando
+  `has_prospect_management()` devuelve `true`. La migración que crea el
+  permiso/RPC todavía no está aplicada al laboratorio ni se concedió el
+  permiso comercial. La cuenta puede consultar, pero no tiene permiso para
+  guardar; no es un problema de contraseña ni un fallo al guardar un formulario.
+- La pantalla mostraba un texto contradictorio que invitaba a crear aunque no
+  existía botón. Se corrigió para explicar el acceso de consulta y nombrar el
+  permiso requerido. Cambio local `89b775f`, publicado en PR #8 como
+  `2505ecd181be0395702cb5b69fd866929cce96ce`; publicación no forzada y sin
+  merge. `git diff --check` pasó. TypeScript local no estaba instalado en este
+  checkout; el nuevo commit queda sujeto a GitHub Actions. Vercel figura
+  pendiente para esa cabeza.
+- No se aplicó la migración ni se otorgó permisos. La creación, edición,
+  asignación, Radar y conversión aún no se pueden probar por UI hasta que la
+  revisión independiente de seguridad permita preparar el laboratorio. No se
+  modificó Producción.
+
 ## 2026-10-09 UTC — Protocolo Maestro 2.0 preparado localmente
 
 - Checkout: /workspace/scratch/b96fa0074e66/equantum-relaunch.
