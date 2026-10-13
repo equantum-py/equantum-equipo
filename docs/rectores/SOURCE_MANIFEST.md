@@ -9,7 +9,9 @@
 - Origen: copia oficial entregada por Daniel en ChatGPT Library.
 - SHA-256: `7960c41c232179c9fcd065874783063fa743f6dd63fbb5f61b2bf57248db2450`
 - Se contrastó con una copia de nombre original sin sufijo; ambos archivos
-  tenían el mismo tamaño y SHA-256. Se conserva una copia versionada en el repo.
+  tenían el mismo tamaño y SHA-256. La copia DOCX exacta está conservada en el
+  commit local de trabajo. El borrador remoto contiene este manifiesto y el
+  hash, no el binario DOCX; el original permanece disponible en ChatGPT Library.
 
 ## P1 — inventario original de 59 escenarios
 
