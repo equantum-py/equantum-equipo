@@ -1,5 +1,25 @@
 # Estado del proyecto — EQ Relanzamiento 2026
 
+## Corrección de estado — 2026-10-13 UTC
+
+La entrega de Prospectos está en la PR #8, abierta en borrador y sin integrar
+(head `5cb579ad72164aeb47bb88785e109e6d3cc4e56e`). GitHub Actions completó con
+éxito instalación, pruebas de aplicación, TypeScript y build Next.js. El check
+de Vercel también figura `success`, pero no se recuperó el hostname de Preview
+(API respondió 403) y no se ejecutó prueba desde navegador. Por tanto, esto
+confirma CI, no un flujo operativo contra Supabase.
+
+La migración de permisos de Prospectos no fue aplicada. La revisión de
+seguridad independiente, la ejecución Auth/RLS real y el E2E
+Prospecto→Asignación→Radar→Oportunidad siguen pendientes. El inventario
+conjunto conserva 401 IDs DOC00–19, 59 IDs P1 y 42 IDs DOC08; no se marcó
+ninguno como PASS a partir del build. Producción no se modificó.
+
+Esfuerzo estimado del primer flujo verificable: 3–7 persona-días tras la
+revisión del contrato de autorización, con incertidumbre en el extremo alto si
+aparecen defectos. No hay capacidad semanal confirmada para traducir el
+esfuerzo a calendario. La bitácora conserva la evidencia y los límites.
+
 ## Actualización — 2026-10-13 UTC
 
 El corte detallado está en `docs/relaunch/CONTROL_STATUS_00_19_2026-10-13.md`;

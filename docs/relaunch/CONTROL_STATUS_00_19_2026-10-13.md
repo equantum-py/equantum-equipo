@@ -1,5 +1,34 @@
 # eQuantum — resumen único de control DOC00–19 / P1–P7 / E0–E8
 
+## Actualización de ejecución — 2026-10-13 UTC
+
+- La rama revisable del candidato Prospectos está publicada como PR #8,
+  borrador y sin merge (`5cb579ad72164aeb47bb88785e109e6d3cc4e56e` contra
+  `d7e6c1cdd8366333380a459fb069a3c91ab73c56`). Los commits locales
+  `5acec3f` y `195adea` se conservaron en la cadena de trabajo; no se reescribió
+  ni se forzó ninguna referencia.
+- Actions run `38455348855`, job `115496530588`: `success`, incluidos
+  dependencias, `validate:p1:app-local`, TypeScript y build. El status de
+  Vercel también está `success`; la API de Vercel devuelve 403 al listar esta
+  Preview. No se pudo comprobar hostname ni ejecutar navegador E2E.
+- DOC08 v1.1 y el CSV P1 (59 casos, contenido original) permanecen íntegros;
+  el índice conserva 401+59+42 = 502 IDs. Estos son IDs inventariados, no 502
+  resultados PASS. Los 401 formales, los 59 P1 y los 42 DOC08 siguen sin PASS
+  funcional registrado para esta ejecución.
+- La implementación del primer flujo comercial (Prospecto, asignación
+  opcional, identidad canónica, historial, Radar y conversión confirmada e
+  idempotente) está en el PR, sin prueba contra Auth/DB. La migración de
+  autorización no se aplicó: falta revisión independiente. Tampoco se tocó
+  producción.
+- Estimación comprobable para cerrar solo este primer flujo después del gate
+  de seguridad: 3–7 persona-días. La capacidad semanal no está registrada, por
+  lo que no se presenta fecha de entrega. El rango total anterior de cierre
+  00–19 sigue siendo provisional y no se reduce por un build CI.
+
+El resto de este documento registra el corte de control previo y se conserva
+como historial; los hechos de esta actualización prevalecen en los puntos
+anteriores.
+
 **Corte:** 2026-10-13 UTC
 **Checkout observado:** `codex/crm-prospects-menu-20261013`
 **HEAD de control:** `195adea` (`docs: consolidate eQuantum closure control status`);

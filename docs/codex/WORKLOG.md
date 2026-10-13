@@ -3,6 +3,48 @@
 Entradas cronológicas. Registrar hechos, no secretos ni datos personales. No
 borrar historia; agregar una entrada correctiva si un hecho cambia.
 
+## 2026-10-13 UTC — verificación de PR #8 y cierre del candidato de Prospectos
+
+- Checkout `/workspace/scratch/b96fa0074e66/equantum-crm-review`, rama
+  `codex/crm-prospects-menu-20261013`, HEAD local `03eabb9`. Los commits locales
+  `5acec3f` y `195adea` siguen en la cadena, junto con `54e1dce` (candidato
+  funcional DOC08) y `03eabb9` (manifiesto de la fuente). Árbol limpio al
+  iniciar este registro. En este checkout no hay stash; no se borró ni alteró
+  ningún stash del otro entorno.
+- GitHub PR #8 está abierta en borrador, no integrada, mergeable en la última
+  lectura: head `5cb579ad72164aeb47bb88785e109e6d3cc4e56e`, base
+  `relanzamiento-2026` (`d7e6c1cdd8366333380a459fb069a3c91ab73c56`). Conserva
+  la entrega acumulada y el DOCX oficial DOC08 v1.1 queda preservado por SHA-256
+  en el commit local; el PR contiene el manifiesto, no el archivo binario.
+- GitHub Actions, workflow run `38455348855`, job `115496530588`, terminó
+  `success`. Pasaron instalación de dependencias y el script
+  `validate:p1:app-local`, que ejecuta pruebas Node, TypeScript y build Next.js
+  con valores Supabase no enrutables. Esto resuelve la verificación de build en
+  CI; no demuestra integración con Supabase ni aceptación funcional DOC08.
+- El check de Vercel del SHA de PR #8 pasó a `success`. No se pudo obtener el
+  hostname de Preview: la consulta de deployments devolvió 403 `forbidden`.
+  No se abrió el navegador contra la Preview ni se hizo E2E visual; no se
+  inventa una URL ni se afirma que la Preview se verificó.
+- No se aplicó la migración
+  `20261013180000_commercial_prospect_workflow_v1.sql`. Sigue requiriendo
+  revisión independiente de permisos/RLS; no se conectó a Supabase, no se
+  usaron usuarios administrativos como actores y no se modificó producción.
+  Los SQL/Auth E2E continúan sin ejecutar.
+- Integridad: DOC08 conserva su versión 1.1 y hash verificado; el CSV P1
+  conserva los 59 IDs y bytes originales. El índice conjunto mantiene 401 IDs
+  formales + 59 P1 + 42 DOC08 (502 filas únicas). Ningún resultado formal se
+  cambió a PASS por la compilación CI.
+- Estado de aceptación: 401/401 formales, 59/59 P1 y 42/42 DOC08 aún no tienen
+  PASS funcional registrado en esta ejecución. La implementación del primer
+  flujo Prospecto→Radar→Oportunidad está codificada, pero no demostrada con
+  sesión Auth real ni base de laboratorio.
+- Estimación para cerrar este primer flujo, no para todo DOC08: 3–7
+  persona-días después de revisión autorizada, condicionados a que el contrato
+  de autorización pase revisión y el hostname protegido de Preview sea
+  accesible. Incluye revisión/fixes de SQL, ejecución de negativos y positivos
+  Auth/RLS, E2E del flujo y evidencia por escenario. No se convierte a fechas:
+  no hay capacidad semanal confirmada en los documentos.
+
 ## 2026-10-09 UTC — Protocolo Maestro 2.0 preparado localmente
 
 - Checkout: /workspace/scratch/b96fa0074e66/equantum-relaunch.
