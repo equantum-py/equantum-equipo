@@ -154,6 +154,10 @@ export default function ProspectsView({
       {canManage && <button onClick={() => startEdit()} className="inline-flex items-center gap-2 rounded-xl bg-[#044474] px-4 py-2.5 text-sm font-bold text-white"><Plus size={16}/>Nuevo Prospecto</button>}
     </div>
 
+    {!errorCode && !canManage && <div role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <b>Acceso de consulta.</b> Tu usuario todavía no tiene habilitado el permiso comercial para crear o editar Prospectos; por eso no aparece el botón. El administrador principal debe habilitar “Administrar Prospectos”.
+    </div>}
+
     {errorCode ? <div role="alert" className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
       <span>{errorCode === "42501" ? "Permiso insuficiente" : errorCode.startsWith("PGRST") ? "Error de consulta" : "Error técnico"}: no se pudieron cargar Prospectos. Código: <b>{errorCode}</b>. No se muestra como lista vacía.</span>
       <button type="button" onClick={() => void onRetry()} className="w-fit rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold">Volver a intentar</button>
@@ -170,7 +174,7 @@ export default function ProspectsView({
           <span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{statusLabels[p.status] || p.status}</span>
           <div className="flex flex-wrap gap-2"><span className="text-xs text-slate-500">{p.source === "other" ? p.source_other || "Otro" : p.source || "Origen no indicado"}</span>{canManage && p.status !== "converted" && <button type="button" onClick={() => startEdit(p)} className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold">Editar</button>}{canManage && p.status === "qualifying" && <button type="button" onClick={() => { setConvertTarget(p); setConvertTitle(p.needs.find((n) => n.service_description)?.service_description || `Oportunidad · ${p.entity_name}`); setHumanConfirmed(false); }} className="rounded-lg bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-900">Convertir</button>}</div>
         </article>; })}
-      </div> : <div className="p-8 text-sm text-slate-500">{prospects.length ? "No hay prospectos que coincidan con la búsqueda." : "Todavía no hay prospectos. Creá uno para iniciar el seguimiento comercial."}</div>}
+      </div> : <div className="p-8 text-sm text-slate-500">{prospects.length ? "No hay prospectos que coincidan con la búsqueda." : canManage ? "Todavía no hay prospectos. Usá “Nuevo Prospecto” para iniciar el seguimiento comercial." : "Todavía no hay prospectos registrados. Tu usuario tiene acceso de consulta; la creación está pendiente de autorización."}</div>}
     </section>}
 
     {draft && <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/40 p-3 sm:p-6"><form onSubmit={submit} className="my-4 w-full max-w-3xl rounded-2xl bg-white p-5 shadow-2xl sm:p-7">
