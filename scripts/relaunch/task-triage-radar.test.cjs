@@ -106,6 +106,7 @@ test("task completion recommendation preserves an existing pending followup with
   );
   assert.equal(recommendation.kind, "preserve-followup");
   assert.equal(recommendation.destination, "radar");
+  assert.equal(recommendation.recommendedOption, "A");
   assert.match(recommendation.detail, /no se crea otro/);
 });
 
@@ -117,6 +118,7 @@ test("task completion recommendation preserves an active Radar item even without
   );
   assert.equal(recommendation.kind, "preserve-radar");
   assert.equal(recommendation.destination, "radar");
+  assert.equal(recommendation.recommendedOption, "A");
 });
 
 test("task completion recommendation keeps a linked Ticket independent", () => {
@@ -127,6 +129,7 @@ test("task completion recommendation keeps a linked Ticket independent", () => {
   );
   assert.equal(recommendation.kind, "linked-ticket");
   assert.equal(recommendation.destination, "tickets");
+  assert.equal(recommendation.recommendedOption, "D");
   assert.match(recommendation.detail, /no cierra el caso/);
 });
 
@@ -134,5 +137,45 @@ test("task completion recommendation explains when no active continuity was foun
   const recommendation = workflow.taskCompletionRecommendation({ id: "task-4" }, [], []);
   assert.equal(recommendation.kind, "no-open-continuity");
   assert.equal(recommendation.destination, null);
+  assert.equal(recommendation.recommendedOption, "E");
   assert.match(recommendation.detail, /acción ejecutable o un compromiso futuro/);
+});
+
+test("contextual recommendation suggests outcome verification for recorded service work", () => {
+  const recommendation = workflow.taskCompletionRecommendation(
+    { id: "task-5", task_type: "Instalación de servicio", title: "Instalar sistema" },
+    [],
+    [],
+  );
+  assert.equal(recommendation.recommendedOption, "B");
+  assert.match(recommendation.detail, /Confirmá el resultado esperado/);
+});
+
+test("explicit next step recommends a linked Task only when no higher-priority signal exists", () => {
+  const recommendation = workflow.taskCompletionRecommendation(
+    { id: "task-6", title: "Revisar documentos", description: "Próximo paso: llamar para coordinar" },
+    [],
+    [],
+  );
+  assert.equal(recommendation.recommendedOption, "C");
+  assert.equal(recommendation.actionHint, "llamar para coordinar");
+});
+
+test("a recorded service result takes priority over a possible response signal", () => {
+  const recommendation = workflow.taskCompletionRecommendation(
+    { id: "task-7", title: "Instalar servicio y esperar confirmación del cliente" },
+    [],
+    [],
+  );
+  assert.equal(recommendation.recommendedOption, "B");
+});
+
+test("existing continuity is recommended before any inferred option", () => {
+  const recommendation = workflow.taskCompletionRecommendation(
+    { id: "task-8", title: "Instalar servicio" },
+    [{ task_id: "task-8", status: "pending" }],
+    [],
+  );
+  assert.equal(recommendation.recommendedOption, "A");
+  assert.match(recommendation.detail, /Se conservan/);
 });
