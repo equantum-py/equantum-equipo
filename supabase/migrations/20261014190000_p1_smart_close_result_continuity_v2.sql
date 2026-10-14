@@ -204,12 +204,23 @@ BEGIN
       RAISE EXCEPTION 'TASK_CONTINUITY_VERIFICATION_PLAN_REQUIRED' USING ERRCODE = '22023';
     END IF;
 
+    -- Equivalent text alone is not a duplicate: date, condition and option matter.
     IF EXISTS (
-      SELECT 1 FROM public.followups f
-      WHERE f.task_id = p_source_task_id
+      SELECT 1
+      FROM public.task_continuity_actions a
+      JOIN public.followups f ON f.id = a.followup_id
+      WHERE a.source_task_id = p_source_task_id
+        AND a.option_code = p_option
         AND f.status::text = 'pending'
         AND lower(regexp_replace(btrim(f.next_action), '\s+', ' ', 'g'))
             = lower(regexp_replace(btrim(p_action), '\s+', ' ', 'g'))
+        AND a.request_payload->>'condition' IS NOT DISTINCT FROM nullif(btrim(p_condition), '')
+        AND (a.request_payload->>'review_at')::timestamptz IS NOT DISTINCT FROM p_review_at
+        AND (p_option <> 'B' OR (
+          a.request_payload->>'expected_result' IS NOT DISTINCT FROM nullif(btrim(p_expected_result), '')
+          AND a.request_payload->>'observation_method' IS NOT DISTINCT FROM nullif(btrim(p_observation_method), '')
+          AND a.request_payload->>'expected_source' IS NOT DISTINCT FROM nullif(btrim(p_expected_source), '')
+        ))
     ) THEN
       RAISE EXCEPTION 'TASK_CONTINUITY_DUPLICATE_EXISTS' USING ERRCODE = '23505';
     END IF;
@@ -253,7 +264,10 @@ BEGIN
     );
   ELSIF p_option = 'C' THEN
     v_title := nullif(btrim(p_new_task_title), '');
-    IF v_title IS NULL OR NOT public.has_task_permission('create_tasks') THEN
+    IF v_title IS NULL OR NOT EXISTS (
+      SELECT 1 FROM public.user_permissions up
+      WHERE up.user_id = v_actor AND up.create_tasks IS TRUE
+    ) THEN
       RAISE EXCEPTION 'TASK_CONTINUITY_CREATE_TASK_FORBIDDEN_OR_INVALID' USING ERRCODE = '42501';
     END IF;
 
