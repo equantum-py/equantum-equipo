@@ -13,6 +13,127 @@ export type RadarHealth =
   | "requires_review_unprotected"
   | "closed";
 
+export type TaskCompletionRecommendation = {
+  kind: "preserve-followup" | "preserve-radar" | "linked-ticket" | "no-open-continuity";
+  title: string;
+  detail: string;
+  destination: "radar" | "tickets" | null;
+  recommendedOption: "A" | "B" | "C" | "D" | "E";
+  actionHint?: string;
+};
+
+/**
+ * Gives a deterministic, explainable completion hint from existing records.
+ * It does not create/close followups, tickets, or tasks and does not rank NBA
+ * actions. Completion itself remains the existing one-click task transition.
+ */
+export function taskCompletionRecommendation(
+  task: {
+    id: string;
+    title?: string;
+    task_type?: string;
+    description?: string | null;
+    ticket_id?: string | null;
+    client_id?: string | null;
+    project_id?: string | null;
+    active_service_id?: string | null;
+  },
+  followups: Array<{ task_id: string; status: string }>,
+  radarItems: Array<{ source_type: string; source_id: string; state: string }>,
+): TaskCompletionRecommendation {
+  const pendingFollowups = followups.filter(
+    (item) => item.task_id === task.id && item.status === "pending",
+  );
+  const activeRadar = radarItems.filter(
+    (item) => item.source_type === "task" && item.source_id === task.id && item.state === "active",
+  );
+
+  if (pendingFollowups.length > 0) {
+    return {
+      kind: "preserve-followup",
+      title: "La tarea se completó; el seguimiento sigue en Radar.",
+      detail: `Hay ${pendingFollowups.length} seguimiento(s) pendiente(s). Se conservan y no se crea otro automáticamente.`,
+      destination: "radar",
+      recommendedOption: "A",
+      actionHint: "Revisar primero el seguimiento existente",
+    };
+  }
+  if (activeRadar.length > 0) {
+    return {
+      kind: "preserve-radar",
+      title: "La tarea se completó; Radar conserva la continuidad activa.",
+      detail: "El seguimiento existente permanece abierto hasta que su motivo deje de requerir continuidad.",
+      destination: "radar",
+      recommendedOption: "A",
+      actionHint: "Revisar primero la continuidad ya abierta",
+    };
+  }
+
+  const sourceText = `${task.task_type ?? ""} ${task.title ?? ""} ${task.description ?? ""}`;
+  const explicitNextStep = task.description?.match(/pr[oó]ximo paso\s*:\s*([^\n.]+)/i)?.[1]?.trim();
+  if (
+    task.active_service_id ||
+    /servicio|instalaci[oó]n|implementar|implementaci[oó]n|campa[nñ]a|optimizaci[oó]n|puesta en marcha|entrega|mejora/i.test(sourceText)
+  ) {
+    return {
+      kind: "no-open-continuity",
+      title: "Conviene comprobar el resultado después de completar esta tarea.",
+      detail: "La recomendación se basa en el tipo o contexto registrado. Confirmá el resultado esperado y cuándo observarlo antes de guardar una verificación.",
+      destination: null,
+      recommendedOption: "B",
+      actionHint: "Verificar el resultado de esta acción",
+    };
+  }
+  if (explicitNextStep) {
+    return {
+      kind: "no-open-continuity",
+      title: "La descripción ya señala una próxima acción.",
+      detail: "Podés convertir ese paso explícito en una nueva Tarea vinculada; Triage calculará su prioridad oficial.",
+      destination: null,
+      recommendedOption: "C",
+      actionHint: explicitNextStep,
+    };
+  }
+  if (/presupuesto|propuesta|respuesta|confirmaci[oó]n|aprobaci[oó]n|tercero|proveedor|cliente/i.test(sourceText)) {
+    return {
+      kind: "no-open-continuity",
+      title: "Puede quedar una respuesta de otra persona por recibir.",
+      detail: "Registrá la espera solamente si hay un compromiso real; indicá responsable y fecha o condición para revisar.",
+      destination: "radar",
+      recommendedOption: "A",
+      actionHint: "Esperar una respuesta o confirmación",
+    };
+  }
+  if (task.ticket_id) {
+    return {
+      kind: "linked-ticket",
+      title: "La tarea se completó; el Ticket mantiene su propio estado.",
+      detail: "Completar la tarea no cierra el caso del cliente ni cambia su historial.",
+      destination: "tickets",
+      recommendedOption: "D",
+      actionHint: "Revisar el proceso en el módulo dueño",
+    };
+  }
+  if (task.client_id || task.project_id) {
+    return {
+      kind: "no-open-continuity",
+      title: "La tarea está vinculada a otro proceso.",
+      detail: "Revisá ese proceso en su módulo dueño; completar la tarea no actualiza ventas, servicios ni proyectos por sí solo.",
+      destination: null,
+      recommendedOption: "D",
+      actionHint: "Abrir el proceso relacionado",
+    };
+  }
+  return {
+    kind: "no-open-continuity",
+    title: "La tarea se completó y no hay continuidad activa registrada.",
+    detail: "Si quedó una acción ejecutable o un compromiso futuro, registralo en Tareas o Radar según corresponda.",
+    destination: null,
+    recommendedOption: "E",
+    actionHint: "Nada más por ahora",
+  };
+}
+
 const legacyStatus: Record<string, OfficialTaskStatus> = {
   pending: "pending",
   in_progress: "in_progress",
