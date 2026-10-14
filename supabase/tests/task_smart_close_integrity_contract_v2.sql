@@ -32,6 +32,34 @@ BEGIN
     END IF;
   END LOOP;
 
+  -- Regression: authorized task creation must use the real permission column.
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_permissions'
+      AND column_name = 'create_tasks'
+  ) THEN
+    RAISE EXCEPTION 'FAIL: create_tasks permission column missing';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    WHERE p.oid = to_regprocedure(
+      'public.create_task_continuity(uuid,text,uuid,text,text,timestamptz,text,text,text,text,text,date)'
+    )
+      AND pg_get_functiondef(p.oid) LIKE '%up.create_tasks IS TRUE%'
+  ) THEN
+    RAISE EXCEPTION 'FAIL: option C does not enforce create_tasks';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    WHERE p.oid = to_regprocedure(
+      'public.create_task_continuity(uuid,text,uuid,text,text,timestamptz,text,text,text,text,text,date)'
+    )
+      AND pg_get_functiondef(p.oid) LIKE '%a.request_payload->>''condition'' IS NOT DISTINCT FROM%'
+      AND pg_get_functiondef(p.oid) LIKE '%a.request_payload->>''review_at''%'
+  ) THEN
+    RAISE EXCEPTION 'FAIL: A/B equivalence must consider condition and date';
+  END IF;
+
   v_fn := to_regprocedure(
     'public.create_task_continuity(uuid,text,uuid,text,text,timestamp with time zone,text,text,text,text,text,date)'
   );
