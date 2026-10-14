@@ -13,6 +13,62 @@ export type RadarHealth =
   | "requires_review_unprotected"
   | "closed";
 
+export type TaskCompletionRecommendation = {
+  kind: "preserve-followup" | "preserve-radar" | "linked-ticket" | "no-open-continuity";
+  title: string;
+  detail: string;
+  destination: "radar" | "tickets" | null;
+};
+
+/**
+ * Gives a deterministic, explainable completion hint from existing records.
+ * It does not create/close followups, tickets, or tasks and does not rank NBA
+ * actions. Completion itself remains the existing one-click task transition.
+ */
+export function taskCompletionRecommendation(
+  task: { id: string; ticket_id?: string | null },
+  followups: Array<{ task_id: string; status: string }>,
+  radarItems: Array<{ source_type: string; source_id: string; state: string }>,
+): TaskCompletionRecommendation {
+  const pendingFollowups = followups.filter(
+    (item) => item.task_id === task.id && item.status === "pending",
+  );
+  const activeRadar = radarItems.filter(
+    (item) => item.source_type === "task" && item.source_id === task.id && item.state === "active",
+  );
+
+  if (pendingFollowups.length > 0) {
+    return {
+      kind: "preserve-followup",
+      title: "La tarea se completó; el seguimiento sigue en Radar.",
+      detail: `Hay ${pendingFollowups.length} seguimiento(s) pendiente(s). Se conservan y no se crea otro automáticamente.`,
+      destination: "radar",
+    };
+  }
+  if (activeRadar.length > 0) {
+    return {
+      kind: "preserve-radar",
+      title: "La tarea se completó; Radar conserva la continuidad activa.",
+      detail: "El seguimiento existente permanece abierto hasta que su motivo deje de requerir continuidad.",
+      destination: "radar",
+    };
+  }
+  if (task.ticket_id) {
+    return {
+      kind: "linked-ticket",
+      title: "La tarea se completó; el Ticket mantiene su propio estado.",
+      detail: "Completar la tarea no cierra el caso del cliente ni cambia su historial.",
+      destination: "tickets",
+    };
+  }
+  return {
+    kind: "no-open-continuity",
+    title: "La tarea se completó y no hay continuidad activa registrada.",
+    detail: "Si quedó una acción ejecutable o un compromiso futuro, registralo en Tareas o Radar según corresponda.",
+    destination: null,
+  };
+}
+
 const legacyStatus: Record<string, OfficialTaskStatus> = {
   pending: "pending",
   in_progress: "in_progress",

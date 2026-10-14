@@ -97,3 +97,42 @@ test("task transitions enforce required waiting/blocking/reopen context", () => 
     null,
   );
 });
+
+test("task completion recommendation preserves an existing pending followup without duplicating it", () => {
+  const recommendation = workflow.taskCompletionRecommendation(
+    { id: "task-1" },
+    [{ task_id: "task-1", status: "pending" }],
+    [{ source_type: "task", source_id: "task-1", state: "active" }],
+  );
+  assert.equal(recommendation.kind, "preserve-followup");
+  assert.equal(recommendation.destination, "radar");
+  assert.match(recommendation.detail, /no se crea otro/);
+});
+
+test("task completion recommendation preserves an active Radar item even without an open followup row", () => {
+  const recommendation = workflow.taskCompletionRecommendation(
+    { id: "task-2" },
+    [],
+    [{ source_type: "task", source_id: "task-2", state: "active" }],
+  );
+  assert.equal(recommendation.kind, "preserve-radar");
+  assert.equal(recommendation.destination, "radar");
+});
+
+test("task completion recommendation keeps a linked Ticket independent", () => {
+  const recommendation = workflow.taskCompletionRecommendation(
+    { id: "task-3", ticket_id: "ticket-3" },
+    [],
+    [],
+  );
+  assert.equal(recommendation.kind, "linked-ticket");
+  assert.equal(recommendation.destination, "tickets");
+  assert.match(recommendation.detail, /no cierra el caso/);
+});
+
+test("task completion recommendation explains when no active continuity was found", () => {
+  const recommendation = workflow.taskCompletionRecommendation({ id: "task-4" }, [], []);
+  assert.equal(recommendation.kind, "no-open-continuity");
+  assert.equal(recommendation.destination, null);
+  assert.match(recommendation.detail, /acción ejecutable o un compromiso futuro/);
+});
