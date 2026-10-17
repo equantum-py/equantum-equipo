@@ -339,6 +339,7 @@ DECLARE
   v_actor uuid := auth.uid();
   v_verification public.task_outcome_verifications%ROWTYPE;
   v_task public.tasks%ROWTYPE;
+  v_followup public.followups%ROWTYPE;
   v_existing public.task_outcome_verification_events%ROWTYPE;
   v_payload jsonb;
 BEGIN
@@ -381,6 +382,17 @@ BEGIN
   END IF;
   IF v_task.status::text <> 'completed' OR v_task.archived_at IS NOT NULL THEN
     RAISE EXCEPTION 'TASK_OUTCOME_TASK_NOT_COMPLETED' USING ERRCODE = '22023';
+  END IF;
+
+  -- Once the user explicitly closes this commitment, later verification writes
+  -- must be rejected; a still-pending followup remains eligible for re-check.
+  SELECT * INTO v_followup
+  FROM public.followups f
+  WHERE f.id = v_verification.followup_id
+    AND f.task_id = v_verification.source_task_id
+  FOR UPDATE;
+  IF NOT FOUND OR v_followup.status::text <> 'pending' THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_FOLLOWUP_NOT_PENDING' USING ERRCODE = '22023';
   END IF;
 
   v_payload := jsonb_build_object(
