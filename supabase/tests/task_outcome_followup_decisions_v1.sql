@@ -156,6 +156,22 @@ BEGIN
   END IF;
   RAISE NOTICE 'PASS: explicit close preserves evidence, syncs Radar and leaves other followups open';
 
+  -- A closed B commitment cannot receive another result until explicitly
+  -- reopened through a future contract; reject without appending evidence.
+  BEGIN
+    PERFORM public.record_task_outcome_verification(
+      v_close,'d0c0a000-0000-4000-8000-0000000000e4',
+      'Resultado tardío','Evidencia posterior al cierre','Informe QA','achieved'
+    );
+    RAISE EXCEPTION 'FAIL: recorded a result against a closed followup';
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    IF SQLERRM NOT LIKE 'TASK_OUTCOME_FOLLOWUP_NOT_PENDING%' THEN RAISE; END IF;
+  END;
+  IF (SELECT count(*) FROM public.task_outcome_verification_events WHERE verification_id=v_close)<>1 THEN
+    RAISE EXCEPTION 'FAIL: rejected post-close result left evidence behind';
+  END IF;
+  RAISE NOTICE 'PASS: closed followup rejects later result writes without changing evidence';
+
   v_request := 'd0c0a000-0000-4000-8000-0000000000d2';
   SELECT * INTO v_result FROM public.decide_task_outcome_followup(
     v_review,v_request,'review','Revisar respuesta','Respuesta recibida',now()+interval '3 days'
