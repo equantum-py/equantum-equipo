@@ -391,8 +391,8 @@ BEGIN
   WHERE f.id = v_verification.followup_id
     AND f.task_id = v_verification.source_task_id
   FOR UPDATE;
-  IF NOT FOUND OR v_followup.status::text <> 'pending' THEN
-    RAISE EXCEPTION 'TASK_OUTCOME_FOLLOWUP_NOT_PENDING' USING ERRCODE = '22023';
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_FOLLOWUP_NOT_FOUND' USING ERRCODE = '42501';
   END IF;
 
   v_payload := jsonb_build_object(
@@ -416,6 +416,12 @@ BEGIN
     END IF;
     RETURN QUERY SELECT p_verification_id, true;
     RETURN;
+  END IF;
+
+  -- Exact retries remain idempotent even if the same followup was closed
+  -- after the original write; only a new result request is rejected.
+  IF v_followup.status::text <> 'pending' THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_FOLLOWUP_NOT_PENDING' USING ERRCODE = '22023';
   END IF;
 
   INSERT INTO public.task_outcome_verification_events(
