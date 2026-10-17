@@ -77,7 +77,10 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub',v_actor::text,true);
   PERFORM set_config('request.jwt.claim.role','authenticated',true);
   PERFORM public.transition_task_operational_status(
-    p_task_id=>v_task,p_status=>'completed',p_expected_status=>'pending'
+    p_task_id=>v_task,p_status=>'in_progress',p_expected_status=>'pending'
+  );
+  PERFORM public.transition_task_operational_status(
+    p_task_id=>v_task,p_status=>'completed',p_expected_status=>'in_progress'
   );
 END
 $$;
