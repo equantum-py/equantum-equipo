@@ -158,6 +158,22 @@ BEGIN
   IF NOT v_result.replayed THEN RAISE EXCEPTION 'FAIL: close retry was not idempotent'; END IF;
   IF (SELECT status::text FROM public.followups WHERE id=(SELECT followup_close FROM qa_outcome_ids))<>'done'
      OR (SELECT count(*) FROM public.task_outcome_verification_events WHERE verification_id=v_close)<>1
+     OR NOT EXISTS (
+       SELECT 1 FROM public.task_outcome_verification_events
+       WHERE verification_id=v_close
+         AND observed_result='Resultado alcanzado'
+         AND evidence='Evidencia: medición QA 91/100'
+         AND evidence_source='Informe QA'
+         AND conclusion='achieved'
+     )
+     OR NOT EXISTS (
+       SELECT 1 FROM public.task_outcome_verifications
+       WHERE id=v_close
+         AND observed_result='Resultado alcanzado'
+         AND last_evidence='Evidencia: medición QA 91/100'
+         AND last_evidence_source='Informe QA'
+         AND conclusion='achieved'
+     )
      OR NOT EXISTS (SELECT 1 FROM public.radar_items WHERE source_type='task' AND source_id=v_task AND state='active') THEN
     RAISE EXCEPTION 'FAIL: close lost evidence, failed to sync Radar, or closed other pending commitments';
   END IF;
