@@ -245,8 +245,8 @@ RESET ROLE;
 
 -- An internal user outside this Task's write scope is denied.
 SET LOCAL ROLE authenticated;
-DO $$
-DECLARE v_actor uuid; v_task uuid; v_verification uuid;
+DO $
+DECLARE v_actor uuid; v_task uuid; v_verification uuid; v_count integer;
 BEGIN
   SELECT denied_actor,source_task,verification_review INTO v_actor,v_task,v_verification FROM qa_outcome_ids;
   IF v_actor IS NULL THEN
@@ -255,6 +255,10 @@ BEGIN
   PERFORM set_config('request.jwt.claims',json_build_object('sub',v_actor,'role','authenticated')::text,true);
   PERFORM set_config('request.jwt.claim.sub',v_actor::text,true);
   PERFORM set_config('request.jwt.claim.role','authenticated',true);
+  SELECT count(*) INTO v_count FROM public.task_outcome_verifications WHERE source_task_id=v_task;
+  IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: out-of-scope internal actor read verification records'; END IF;
+  SELECT count(*) INTO v_count FROM public.task_outcome_followup_decisions WHERE verification_id=v_verification;
+  IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: out-of-scope internal actor read decision records'; END IF;
   BEGIN
     PERFORM public.decide_task_outcome_followup(v_verification,gen_random_uuid(),'close');
     RAISE EXCEPTION 'FAIL: unauthorized actor decided another internal Followup';
@@ -266,13 +270,15 @@ $$;
 
 -- Portal is denied by the RPC's internal-only guard.
 SET LOCAL ROLE authenticated;
-DO $$
-DECLARE v_actor uuid; v_verification uuid;
+DO $
+DECLARE v_actor uuid; v_verification uuid; v_count integer;
 BEGIN
   SELECT portal_actor,verification_review INTO v_actor,v_verification FROM qa_outcome_ids;
   PERFORM set_config('request.jwt.claims',json_build_object('sub',v_actor,'role','authenticated')::text,true);
   PERFORM set_config('request.jwt.claim.sub',v_actor::text,true);
   PERFORM set_config('request.jwt.claim.role','authenticated',true);
+  SELECT count(*) INTO v_count FROM public.task_outcome_verifications WHERE id=v_verification;
+  IF v_count<>0 THEN RAISE EXCEPTION 'FAIL: Portal actor read internal verification'; END IF;
   BEGIN
     PERFORM public.decide_task_outcome_followup(v_verification,gen_random_uuid(),'close');
     RAISE EXCEPTION 'FAIL: Portal actor decided an internal B Followup';
@@ -281,6 +287,29 @@ BEGIN
   RAISE NOTICE 'PASS: Portal actor is denied';
 END
 $$;
+RESET ROLE;
+
+-- Anonymous Postgres role has neither direct table SELECT nor RPC EXECUTE.
+SET LOCAL ROLE anon;
+DO $
+DECLARE v_count integer;
+BEGIN
+  BEGIN
+    SELECT count(*) INTO v_count FROM public.task_outcome_verifications;
+    RAISE EXCEPTION 'FAIL: anon read internal verifications';
+  EXCEPTION WHEN SQLSTATE '42501' THEN NULL;
+  END;
+  BEGIN
+    PERFORM public.decide_task_outcome_followup(
+      'd0c0a000-0000-4000-8000-0000000000c1',
+      gen_random_uuid(),'close'
+    );
+    RAISE EXCEPTION 'FAIL: anon executed the B decision RPC';
+  EXCEPTION WHEN SQLSTATE '42501' THEN NULL;
+  END;
+  RAISE NOTICE 'PASS: anon cannot read outcome records or execute B decision RPC';
+END
+$;
 RESET ROLE;
 
 ROLLBACK;
