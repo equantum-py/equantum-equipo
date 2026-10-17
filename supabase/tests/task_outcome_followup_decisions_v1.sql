@@ -156,8 +156,16 @@ BEGIN
   END IF;
   RAISE NOTICE 'PASS: explicit close preserves evidence, syncs Radar and leaves other followups open';
 
-  -- A closed B commitment cannot receive another result until explicitly
-  -- reopened through a future contract; reject without appending evidence.
+  -- Replaying the original successful write remains idempotent after closure.
+  SELECT * INTO v_result FROM public.record_task_outcome_verification(
+    v_close,'d0c0a000-0000-4000-8000-0000000000e1',
+    'Resultado alcanzado','Evidencia: medición QA 91/100','Informe QA','achieved'
+  );
+  IF NOT v_result.replayed THEN
+    RAISE EXCEPTION 'FAIL: exact outcome retry failed after explicit close';
+  END IF;
+
+  -- A closed B commitment rejects a new result request without appending evidence.
   BEGIN
     PERFORM public.record_task_outcome_verification(
       v_close,'d0c0a000-0000-4000-8000-0000000000e4',
