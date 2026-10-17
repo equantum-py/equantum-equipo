@@ -42,7 +42,11 @@ BEGIN
   ORDER BY p.id LIMIT 1;
   SELECT p.id INTO v_denied
   FROM public.profiles p
+  JOIN public.user_permissions up ON up.user_id = p.id
   WHERE p.active IS TRUE AND p.id <> v_actor AND NOT coalesce(p.is_master,false)
+    AND coalesce(up.view_all_tasks,false) IS FALSE
+    AND coalesce(up.view_area_tasks,false) IS FALSE
+    AND coalesce(up.reassign_tasks,false) IS FALSE
     AND NOT EXISTS (SELECT 1 FROM public.client_portal_users cpu WHERE cpu.user_id=p.id AND cpu.active IS TRUE)
   ORDER BY p.id LIMIT 1;
   SELECT cpu.user_id INTO v_portal
