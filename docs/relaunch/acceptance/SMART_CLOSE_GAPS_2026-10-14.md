@@ -52,3 +52,15 @@ PR #9 registró anteriormente 12 pruebas operativas, 9 financieras, TypeScript y
 ## Límite
 
 No se ejecutó ningún SQL remoto, no se hizo despliegue, no se tocó producción y no se integraron PR #8, #9 ni #10.
+
+## B — decisiones posteriores al resultado (17/10/2026)
+
+La revisión de Dirección autorizó que guardar un resultado nunca cierre Radar automáticamente. El candidato actualizado conserva la Tarea Completada y el Followup B pendiente tras registrar «logrado», «no logrado» o «no concluyente». Después permite decidir explícitamente:
+
+- Cerrar este Followup: cierra solo su fila; conserva evidencia e historial y devuelve el conteo de otros pendientes.
+- Programar otra revisión: modifica la misma fila y la sincronización existente la refleja en Radar.
+- Crear acción correctiva: crea una Tarea vinculada con permiso `create_tasks`; deja abierto el Followup B.
+
+La decisión usa idempotencia por actor/solicitud, bloqueos transaccionales y RPC autorizada. Se agregaron regresiones estructurales y transaccionales; todavía requieren CI y revisión/aplicación aprobada para poder ejecutarse.
+
+**Evidencia B:** el formulario actualizado separa resultado observado, evidencia concreta o referencia, fuente y conclusión. La evidencia se conserva en el evento append-only; no hay adjunto binario ni dependencia de Storage.
