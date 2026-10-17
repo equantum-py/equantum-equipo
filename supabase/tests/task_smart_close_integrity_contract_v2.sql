@@ -12,7 +12,8 @@ BEGIN
   FOREACH v_name IN ARRAY ARRAY[
     'public.task_continuity_actions',
     'public.task_outcome_verifications',
-    'public.task_outcome_verification_events'
+    'public.task_outcome_verification_events',
+    'public.task_outcome_followup_decisions'
   ] LOOP
     IF NOT EXISTS (
       SELECT 1 FROM pg_class c
@@ -77,7 +78,7 @@ BEGIN
   END IF;
 
   v_fn := to_regprocedure(
-    'public.record_task_outcome_verification(uuid,uuid,text,text,text)'
+    'public.record_task_outcome_verification(uuid,uuid,text,text,text,text)'
   );
   IF v_fn IS NULL THEN RAISE EXCEPTION 'FAIL: record_task_outcome_verification missing'; END IF;
   SELECT p.proconfig INTO v_cfg FROM pg_proc p WHERE p.oid = v_fn;
@@ -88,9 +89,40 @@ BEGIN
     RAISE EXCEPTION 'FAIL: record_task_outcome_verification SECURITY DEFINER contract changed';
   END IF;
   IF has_function_privilege('anon', v_fn, 'EXECUTE')
-     OR has_function_privilege('PUBLIC', v_fn, 'EXECUTE')
-     OR NOT has_function_privilege('authenticated', v_fn, 'EXECUTE') THEN
+     OR NOT has_function_privilege('authenticated', v_fn, 'EXECUTE')
+     OR EXISTS (
+       SELECT 1 FROM pg_proc p
+       CROSS JOIN LATERAL aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
+       WHERE p.oid = v_fn AND acl.grantee = 0 AND acl.privilege_type = 'EXECUTE'
+     ) THEN
     RAISE EXCEPTION 'FAIL: record_task_outcome_verification execute ACL is too broad or missing';
+  END IF;
+  v_fn := to_regprocedure(
+    'public.decide_task_outcome_followup(uuid,uuid,text,text,text,timestamptz,text,text,date)'
+  );
+  IF v_fn IS NULL THEN RAISE EXCEPTION 'FAIL: decide_task_outcome_followup missing'; END IF;
+  SELECT p.proconfig INTO v_cfg FROM pg_proc p WHERE p.oid = v_fn;
+  IF NOT (coalesce(v_cfg, ARRAY[]::text[]) @> ARRAY['search_path=""']) THEN
+    RAISE EXCEPTION 'FAIL: decide_task_outcome_followup search_path is not empty';
+  END IF;
+  IF NOT (SELECT prosecdef FROM pg_proc WHERE oid = v_fn) THEN
+    RAISE EXCEPTION 'FAIL: decide_task_outcome_followup SECURITY DEFINER contract changed';
+  END IF;
+  IF has_function_privilege('anon', v_fn, 'EXECUTE')
+     OR NOT has_function_privilege('authenticated', v_fn, 'EXECUTE')
+     OR EXISTS (
+       SELECT 1 FROM pg_proc p
+       CROSS JOIN LATERAL aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
+       WHERE p.oid = v_fn AND acl.grantee = 0 AND acl.privilege_type = 'EXECUTE'
+     ) THEN
+    RAISE EXCEPTION 'FAIL: decide_task_outcome_followup execute ACL is too broad or missing';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p
+    WHERE p.oid = to_regprocedure('public.record_task_outcome_verification(uuid,uuid,text,text,text,text)')
+      AND pg_get_functiondef(p.oid) ILIKE '%UPDATE public.followups%'
+  ) THEN
+    RAISE EXCEPTION 'FAIL: recording an outcome must not close its Radar Followup';
   END IF;
 END
 $$;
