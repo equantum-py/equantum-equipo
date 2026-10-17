@@ -11,9 +11,9 @@
 ## Seguridad y compatibilidad
 - Funciones `create_task_continuity` y `record_task_outcome_verification`: SECURITY DEFINER, propietario postgres, search_path vacío, autenticación interna activa, autorización sobre tarea, bloqueos transaccionales y clave de reintento. Las tablas nuevas tienen RLS, SELECT autenticado y DML directo revocado.
 - Revisión de lectura: políticas nuevas requieren `is_internal_user()` y una tarea de origen visible bajo RLS de `tasks`; los eventos atraviesan verificación y tarea. Deben probarse perfiles internos autorizados, internos sin acceso, Portal y anon mediante tokens reales.
-- **Bloqueo pendiente**: resultado B registra conclusión pero no cambia estado del seguimiento asociado. Es necesario un contrato explícito: conservar seguimiento cuando el resultado sea no logrado/no concluyente o subsista compromiso; cerrar únicamente con resolución explícita y evidencia, sin cierre automático por conclusión 'achieved'.
-- **Bloqueo pendiente**: pruebas funcionales de equivalencia A/B, concurrencia de dos sesiones, rollback y autorización; el test SQL estructural no las sustituye.
-- **Revisión independiente**: pendiente de aprobación explícita por revisor diferente del implementador; sin esa aprobación NO aplicar migración.
+- **Cambio propuesto para B**: `record_task_outcome_verification` conserva estado Completada y deja pendiente el Followup, cualquiera sea la conclusión. `decide_task_outcome_followup` agrega únicamente una decisión expresa: cerrar ese Followup, reprogramar el mismo Followup o crear una tarea correctiva dejando el Followup abierto. Al cerrar, devuelve el número de otros Followups pendientes. La escritura del Followup usa el trigger de sincronización existente hacia Radar.
+- **Regresiones preparadas**: prueba estructural de ACL/RLS y prueba SQL transaccional para tres conclusiones, cierre explícito, reprogramación, tarea correctiva, reintentos, rechazo de permisos y sincronización Radar. Ninguna prueba SQL de esta versión ha sido ejecutada todavía; además se requiere la prueba concurrente de dos sesiones reales.
+- **Revisión independiente**: sigue pendiente de aprobación explícita por revisor diferente del implementador. Esta nota y las comprobaciones del autor no sustituyen esa revisión; sin ella NO aplicar migración.
 
 ## CI / Vercel
 - 5e66c97, 20947a6 y 7211656: ERROR en listado de despliegues; logs de sintaxis JSX aportados en la conversación.
@@ -27,3 +27,19 @@
 - PR #8 y producción intactas. Los 59 escenarios P1, 401 criterios y 42 escenarios DOC08 no se confunden ni se dan por aceptados.
 
 **Puerta siguiente:** definir y probar ciclo de vida del seguimiento B, obtener revisión humana independiente de SECURITY DEFINER/RLS/privilegios y autorización escrita; solo después migración autorizada al laboratorio y pruebas completas.
+
+
+## B — ciclo explícito de verificación actualizado (17/10/2026)
+
+- Registrar observado/fuente/conclusión crea el evento append-only y actualiza el último resultado sin tocar `tasks.status` ni cerrar `followups`.
+- La nueva RPC `decide_task_outcome_followup` exige identidad interna activa, `can_write_task` y resultado ya registrado. Las decisiones son `close`, `review` o `corrective_task`.
+- `close` cambia a `done` solo el Followup vinculado. `review` modifica la misma fila. `corrective_task` exige `create_tasks`, crea tarea vinculada y mantiene abierto el Followup B.
+- Las decisiones tienen clave idempotente por actor, payload inmutable, lock del Task/verification/Followup y transacción única. El resultado reporta cuántos otros seguimientos siguen pendientes.
+- UI: las opciones aparecen después de registrar una conclusión; el cierre requiere confirmación, y si no se puede confirmar el estado del Followup se bloquean las acciones.
+
+**Estado:** implementado en borrador; revisión independiente, CI del commit actualizado y pruebas remotas siguen pendientes. La migración continúa sin aplicar.
+
+
+## Captura de evidencia separada
+
+La verificación B almacena cuatro datos distintos: resultado observado, evidencia concreta (texto o referencia), fuente de esa evidencia y conclusión. La evidencia queda en la bitácora append-only de cada registro y se muestra por separado en Radar. No se suben archivos ni se declara Storage como integrado. La Tarea sigue en estado Completada; ninguna conclusión cierra el Followup automáticamente.
