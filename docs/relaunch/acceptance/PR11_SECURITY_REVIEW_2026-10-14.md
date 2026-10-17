@@ -43,3 +43,12 @@
 ## Captura de evidencia separada
 
 La verificación B almacena cuatro datos distintos: resultado observado, evidencia concreta (texto o referencia), fuente de esa evidencia y conclusión. La evidencia queda en la bitácora append-only de cada registro y se muestra por separado en Radar. No se suben archivos ni se declara Storage como integrado. La Tarea sigue en estado Completada; ninguna conclusión cierra el Followup automáticamente.
+
+
+## Revisión correctiva del ciclo B — 17/10/2026
+
+- Después del cierre explícito, un resultado nuevo se rechaza; repetir exactamente una solicitud de resultado ya aceptada devuelve replay y no duplica el evento.
+- El formulario de Radar oculta el cierre genérico para una verificación B. Si el seguimiento está cerrado o su estado no se pudo cargar, no permite enviar otra verificación.
+- La prueba transaccional ahora sigue las transiciones oficiales, comprueba logrado/no logrado/no concluyente sin cierre automático, la persistencia de resultado/evidencia/fuente tras cerrar, la reprogramación, acción correctiva, reintentos, actor interno fuera de alcance, Portal y anon.
+- La consulta de solo lectura del laboratorio confirmó que la tabla de decisiones B no existe todavía. La migración no se aplicó.
+- Estas comprobaciones son del implementador y no equivalen a revisión independiente. El dictamen sigue siendo NO APROBADO PARA APLICACIÓN hasta una aprobación explícita de otro revisor.
