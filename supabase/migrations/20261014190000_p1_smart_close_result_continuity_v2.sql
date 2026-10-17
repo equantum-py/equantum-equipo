@@ -33,6 +33,7 @@ CREATE TABLE public.task_outcome_verifications (
   conclusion text NOT NULL DEFAULT 'pending'
     CHECK (conclusion IN ('pending','achieved','not_achieved','inconclusive')),
   observed_result text,
+  last_evidence text,
   last_evidence_source text,
   last_recorded_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   last_recorded_at timestamptz,
@@ -42,10 +43,11 @@ CREATE TABLE public.task_outcome_verifications (
     FOREIGN KEY (continuity_action_id, followup_id)
     REFERENCES public.task_continuity_actions(id, followup_id) ON DELETE RESTRICT,
   CONSTRAINT task_outcome_verifications_observation_ck CHECK (
-    (conclusion = 'pending' AND observed_result IS NULL AND last_evidence_source IS NULL AND last_recorded_at IS NULL)
+    (conclusion = 'pending' AND observed_result IS NULL AND last_evidence IS NULL AND last_evidence_source IS NULL AND last_recorded_at IS NULL)
     OR
     (conclusion <> 'pending'
       AND observed_result IS NOT NULL AND length(btrim(observed_result)) > 0
+      AND last_evidence IS NOT NULL AND length(btrim(last_evidence)) > 0
       AND last_evidence_source IS NOT NULL AND length(btrim(last_evidence_source)) > 0
       AND last_recorded_at IS NOT NULL)
   )
@@ -57,6 +59,7 @@ CREATE TABLE public.task_outcome_verification_events (
   actor_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE RESTRICT,
   request_id uuid NOT NULL,
   observed_result text NOT NULL CHECK (length(btrim(observed_result)) > 0),
+  evidence text NOT NULL CHECK (length(btrim(evidence)) > 0),
   evidence_source text NOT NULL CHECK (length(btrim(evidence_source)) > 0),
   conclusion text NOT NULL CHECK (conclusion IN ('achieved','not_achieved','inconclusive')),
   recorded_at timestamptz NOT NULL DEFAULT now(),
@@ -323,6 +326,7 @@ CREATE OR REPLACE FUNCTION public.record_task_outcome_verification(
   p_verification_id uuid,
   p_request_id uuid,
   p_observed_result text,
+  p_evidence text,
   p_evidence_source text,
   p_conclusion text
 )
@@ -344,6 +348,7 @@ BEGIN
   END IF;
   IF p_verification_id IS NULL OR p_request_id IS NULL
      OR nullif(btrim(p_observed_result), '') IS NULL
+     OR nullif(btrim(p_evidence), '') IS NULL
      OR nullif(btrim(p_evidence_source), '') IS NULL
      OR p_conclusion IS NULL
      OR p_conclusion NOT IN ('achieved','not_achieved','inconclusive') THEN
@@ -351,10 +356,11 @@ BEGIN
   END IF;
 
   PERFORM pg_advisory_xact_lock(hashtextextended(v_actor::text || ':' || p_request_id::text, 0));
+  -- Use a consistent lock order with explicit follow-up decisions:
+  -- resolve the immutable source id, lock Task, then lock verification.
   SELECT * INTO v_verification
   FROM public.task_outcome_verifications v
-  WHERE v.id = p_verification_id
-  FOR UPDATE;
+  WHERE v.id = p_verification_id;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'TASK_OUTCOME_FORBIDDEN' USING ERRCODE = '42501';
   END IF;
@@ -362,7 +368,15 @@ BEGIN
   FROM public.tasks t
   WHERE t.id = v_verification.source_task_id
   FOR UPDATE;
-  IF NOT FOUND OR NOT public.can_write_task(v_verification.source_task_id) THEN
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_FORBIDDEN' USING ERRCODE = '42501';
+  END IF;
+  SELECT * INTO v_verification
+  FROM public.task_outcome_verifications v
+  WHERE v.id = p_verification_id
+  FOR UPDATE;
+  IF NOT FOUND OR v_verification.source_task_id <> v_task.id
+     OR NOT public.can_write_task(v_verification.source_task_id) THEN
     RAISE EXCEPTION 'TASK_OUTCOME_FORBIDDEN' USING ERRCODE = '42501';
   END IF;
   IF v_task.status::text <> 'completed' OR v_task.archived_at IS NOT NULL THEN
@@ -372,6 +386,7 @@ BEGIN
   v_payload := jsonb_build_object(
     'verification_id', p_verification_id,
     'observed_result', btrim(p_observed_result),
+    'evidence', btrim(p_evidence),
     'evidence_source', btrim(p_evidence_source),
     'conclusion', p_conclusion
   );
@@ -382,6 +397,7 @@ BEGIN
   IF FOUND THEN
     IF v_existing.verification_id <> p_verification_id
        OR v_existing.observed_result <> btrim(p_observed_result)
+       OR v_existing.evidence <> btrim(p_evidence)
        OR v_existing.evidence_source <> btrim(p_evidence_source)
        OR v_existing.conclusion <> p_conclusion THEN
       RAISE EXCEPTION 'TASK_OUTCOME_IDEMPOTENCY_KEY_REUSED' USING ERRCODE = '22023';
@@ -391,15 +407,16 @@ BEGIN
   END IF;
 
   INSERT INTO public.task_outcome_verification_events(
-    verification_id, actor_id, request_id, observed_result, evidence_source, conclusion
+    verification_id, actor_id, request_id, observed_result, evidence, evidence_source, conclusion
   ) VALUES (
     p_verification_id, v_actor, p_request_id, btrim(p_observed_result),
-    btrim(p_evidence_source), p_conclusion
+    btrim(p_evidence), btrim(p_evidence_source), p_conclusion
   );
 
   UPDATE public.task_outcome_verifications v
   SET conclusion = p_conclusion,
       observed_result = btrim(p_observed_result),
+      last_evidence = btrim(p_evidence),
       last_evidence_source = btrim(p_evidence_source),
       last_recorded_by = v_actor,
       last_recorded_at = now(),
@@ -411,10 +428,255 @@ END;
 $$;
 
 ALTER FUNCTION public.create_task_continuity(uuid,text,uuid,text,text,timestamptz,text,text,text,text,text,date) OWNER TO postgres;
-ALTER FUNCTION public.record_task_outcome_verification(uuid,uuid,text,text,text) OWNER TO postgres;
+ALTER FUNCTION public.record_task_outcome_verification(uuid,uuid,text,text,text,text) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.create_task_continuity(uuid,text,uuid,text,text,timestamptz,text,text,text,text,text,date) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.record_task_outcome_verification(uuid,uuid,text,text,text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.record_task_outcome_verification(uuid,uuid,text,text,text,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_task_continuity(uuid,text,uuid,text,text,timestamptz,text,text,text,text,text,date) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.record_task_outcome_verification(uuid,uuid,text,text,text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.record_task_outcome_verification(uuid,uuid,text,text,text,text) TO authenticated;
+
+
+CREATE TABLE public.task_outcome_followup_decisions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  verification_id uuid NOT NULL REFERENCES public.task_outcome_verifications(id) ON DELETE RESTRICT,
+  followup_id uuid NOT NULL REFERENCES public.followups(id) ON DELETE RESTRICT,
+  actor_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE RESTRICT,
+  request_id uuid NOT NULL,
+  decision text NOT NULL CHECK (decision IN ('close','review','corrective_task')),
+  decision_payload jsonb NOT NULL,
+  created_task_id uuid REFERENCES public.tasks(id) ON DELETE RESTRICT,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT task_outcome_followup_decisions_actor_request_uq UNIQUE (actor_id, request_id),
+  CONSTRAINT task_outcome_followup_decisions_shape_ck CHECK (
+    (decision = 'corrective_task' AND created_task_id IS NOT NULL)
+    OR (decision <> 'corrective_task' AND created_task_id IS NULL)
+  )
+);
+
+ALTER TABLE public.task_outcome_followup_decisions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.task_outcome_followup_decisions FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.task_outcome_followup_decisions TO authenticated;
+CREATE POLICY task_outcome_followup_decisions_internal_scoped_read
+ON public.task_outcome_followup_decisions FOR SELECT TO authenticated
+USING (
+  public.is_internal_user()
+  AND public.is_active_user()
+  AND EXISTS (
+    SELECT 1 FROM public.tasks t
+    WHERE t.id = (SELECT v.source_task_id
+      FROM public.task_outcome_verifications v
+      WHERE v.id = verification_id)
+  )
+);
+
+
+CREATE OR REPLACE FUNCTION public.decide_task_outcome_followup(
+  p_verification_id uuid,
+  p_request_id uuid,
+  p_decision text,
+  p_next_action text DEFAULT NULL,
+  p_condition text DEFAULT NULL,
+  p_review_at timestamptz DEFAULT NULL,
+  p_corrective_title text DEFAULT NULL,
+  p_corrective_context text DEFAULT NULL,
+  p_corrective_due_date date DEFAULT NULL
+)
+RETURNS TABLE(
+  decision_id uuid,
+  followup_id uuid,
+  created_task_id uuid,
+  remaining_pending_count integer,
+  replayed boolean
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_actor uuid := auth.uid();
+  v_verification public.task_outcome_verifications%ROWTYPE;
+  v_task public.tasks%ROWTYPE;
+  v_followup public.followups%ROWTYPE;
+  v_existing public.task_outcome_followup_decisions%ROWTYPE;
+  v_payload jsonb;
+  v_decision_id uuid;
+  v_created_task_id uuid;
+  v_remaining integer;
+  v_action text;
+  v_title text;
+BEGIN
+  IF v_actor IS NULL OR NOT coalesce(public.is_internal_user(), false)
+     OR NOT coalesce(public.is_active_user(), false) THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_DECISION_INTERNAL_ONLY' USING ERRCODE = '42501';
+  END IF;
+  IF p_verification_id IS NULL OR p_request_id IS NULL OR p_decision IS NULL
+     OR p_decision NOT IN ('close','review','corrective_task') THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_DECISION_INVALID' USING ERRCODE = '22023';
+  END IF;
+  IF p_decision = 'review' AND (
+    nullif(btrim(p_next_action), '') IS NULL
+    OR (p_review_at IS NULL AND nullif(btrim(p_condition), '') IS NULL)
+  ) THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_REVIEW_DETAILS_REQUIRED' USING ERRCODE = '22023';
+  END IF;
+  IF p_decision = 'corrective_task' AND nullif(btrim(p_corrective_title), '') IS NULL THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_CORRECTIVE_TITLE_REQUIRED' USING ERRCODE = '22023';
+  END IF;
+
+  v_payload := jsonb_strip_nulls(jsonb_build_object(
+    'verification_id', p_verification_id,
+    'decision', p_decision,
+    'next_action', nullif(btrim(p_next_action), ''),
+    'condition', nullif(btrim(p_condition), ''),
+    'review_at', p_review_at,
+    'corrective_title', nullif(btrim(p_corrective_title), ''),
+    'corrective_context', nullif(btrim(p_corrective_context), ''),
+    'corrective_due_date', p_corrective_due_date
+  ));
+
+  -- The same lock order is used by outcome recording and decision handling:
+  -- request key, source Task, verification, then its exact Followup.
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_actor::text || ':' || p_request_id::text, 0));
+  SELECT * INTO v_verification
+  FROM public.task_outcome_verifications v
+  WHERE v.id = p_verification_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_DECISION_FORBIDDEN' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO v_task
+  FROM public.tasks t
+  WHERE t.id = v_verification.source_task_id
+  FOR UPDATE;
+  IF NOT FOUND OR v_task.archived_at IS NOT NULL OR v_task.status::text <> 'completed'
+     OR NOT public.can_write_task(v_verification.source_task_id) THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_DECISION_FORBIDDEN' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO v_verification
+  FROM public.task_outcome_verifications v
+  WHERE v.id = p_verification_id
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_DECISION_FORBIDDEN' USING ERRCODE = '42501';
+  END IF;
+  IF v_verification.conclusion = 'pending' THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_DECISION_REQUIRES_RESULT' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_followup
+  FROM public.followups f
+  WHERE f.id = v_verification.followup_id
+    AND f.task_id = v_verification.source_task_id
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_DECISION_FORBIDDEN' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO v_existing
+  FROM public.task_outcome_followup_decisions d
+  WHERE d.actor_id = v_actor AND d.request_id = p_request_id;
+  IF FOUND THEN
+    IF v_existing.verification_id <> p_verification_id
+       OR v_existing.followup_id <> v_followup.id
+       OR v_existing.decision <> p_decision
+       OR v_existing.decision_payload IS DISTINCT FROM v_payload THEN
+      RAISE EXCEPTION 'TASK_OUTCOME_DECISION_IDEMPOTENCY_KEY_REUSED' USING ERRCODE = '22023';
+    END IF;
+    SELECT count(*)::integer INTO v_remaining
+    FROM public.followups f
+    WHERE f.task_id = v_verification.source_task_id
+      AND f.status::text = 'pending';
+    RETURN QUERY SELECT v_existing.id, v_existing.followup_id,
+      v_existing.created_task_id, v_remaining, true;
+    RETURN;
+  END IF;
+
+  IF v_followup.status::text <> 'pending' THEN
+    RAISE EXCEPTION 'TASK_OUTCOME_FOLLOWUP_NOT_PENDING' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_decision = 'close' THEN
+    UPDATE public.followups
+    SET status = 'done',
+        last_movement_at = now(),
+        updated_at = now()
+    WHERE id = v_followup.id AND status::text = 'pending';
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'TASK_OUTCOME_FOLLOWUP_NOT_PENDING' USING ERRCODE = '22023';
+    END IF;
+  ELSIF p_decision = 'review' THEN
+    UPDATE public.followups
+    SET next_action = btrim(p_next_action),
+        next_followup_at = p_review_at,
+        notes = concat_ws(E'\n',
+          nullif(notes, ''),
+          CASE WHEN nullif(btrim(p_condition), '') IS NOT NULL
+            THEN 'Nueva condición de revisión: ' || btrim(p_condition) END
+        ),
+        last_movement_at = now(),
+        updated_at = now()
+    WHERE id = v_followup.id AND status::text = 'pending';
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'TASK_OUTCOME_FOLLOWUP_NOT_PENDING' USING ERRCODE = '22023';
+    END IF;
+  ELSE
+    IF NOT EXISTS (
+      SELECT 1 FROM public.user_permissions up
+      WHERE up.user_id = v_actor AND up.create_tasks IS TRUE
+    ) THEN
+      RAISE EXCEPTION 'TASK_OUTCOME_CORRECTIVE_TASK_FORBIDDEN' USING ERRCODE = '42501';
+    END IF;
+    v_title := btrim(p_corrective_title);
+    INSERT INTO public.tasks(
+      title, original_title, area, task_type, created_by, assignee_id,
+      client_id, project_id, ticket_id, active_service_id, due_date, description
+    ) VALUES (
+      v_title, v_title, v_task.area, v_task.task_type, v_actor, v_actor,
+      v_task.client_id, v_task.project_id, v_task.ticket_id, v_task.active_service_id,
+      p_corrective_due_date,
+      concat_ws(E'\n\n',
+        'Acción correctiva desde verificación de tarea completada ' || v_task.id::text,
+        nullif(btrim(p_corrective_context), ''),
+        CASE WHEN nullif(btrim(v_task.description), '') IS NOT NULL
+          THEN 'Contexto conservado: ' || v_task.description END
+      )
+    ) RETURNING id INTO v_created_task_id;
+    INSERT INTO public.task_events(task_id, actor_id, event_type, detail)
+    VALUES
+      (v_created_task_id, v_actor, 'outcome_corrective_from_task',
+       'Acción correctiva vinculada a verificación ' || p_verification_id::text),
+      (v_task.id, v_actor, 'outcome_corrective_task_created',
+       'Nueva tarea correctiva ' || v_created_task_id::text);
+  END IF;
+
+  INSERT INTO public.task_outcome_followup_decisions(
+    verification_id, followup_id, actor_id, request_id, decision,
+    decision_payload, created_task_id
+  ) VALUES (
+    p_verification_id, v_followup.id, v_actor, p_request_id, p_decision,
+    v_payload, v_created_task_id
+  ) RETURNING id INTO v_decision_id;
+
+  INSERT INTO public.task_events(task_id, actor_id, event_type, detail)
+  VALUES (
+    v_task.id, v_actor, 'outcome_followup_decision',
+    CASE p_decision
+      WHEN 'close' THEN 'Seguimiento B cerrado expresamente por el usuario'
+      WHEN 'review' THEN 'Seguimiento B reprogramado por el usuario'
+      ELSE 'Seguimiento B conserva continuidad y genera una tarea correctiva'
+    END
+  );
+
+  SELECT count(*)::integer INTO v_remaining
+  FROM public.followups f
+  WHERE f.task_id = v_task.id AND f.status::text = 'pending';
+  RETURN QUERY SELECT v_decision_id, v_followup.id, v_created_task_id, v_remaining, false;
+END;
+$$;
+
+ALTER FUNCTION public.decide_task_outcome_followup(uuid,uuid,text,text,text,timestamptz,text,text,date) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.decide_task_outcome_followup(uuid,uuid,text,text,text,timestamptz,text,text,date) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.decide_task_outcome_followup(uuid,uuid,text,text,text,timestamptz,text,text,date) TO authenticated;
+
 
 COMMIT;
